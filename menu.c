@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <ctype.h>
+
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define MAX_LENGTH 100
 // Menu choices
@@ -18,9 +20,13 @@ char *choices[] = {
 };
 
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
-void create_new_rogue(MENU *menu, WINDOW *menu_win);// Function to handle the "Create New Rogue" option
+void create_new_rogue(MENU *menu, WINDOW *menu_win, chtype color);// Function to handle the "Create New Rogue" option
 bool username_exists(const char *filename, const char *username);
 void register_user(const char *filename, const char *username, const char *password);
+bool contains_number(const char *password);
+bool contains_lowercase(const char *password);
+bool contains_uppercase(const char *password);
+bool is_valid_email(const char *email);
 
 int main() {
     ITEM **items;
@@ -34,7 +40,8 @@ int main() {
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
-    init_pair(1, COLOR_RED, COLOR_BLACK);
+    init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(2, COLOR_CYAN, COLOR_BLACK);
 
     // Count the number of choices
     n_choices = ARRAY_SIZE(choices) - 1;
@@ -88,7 +95,7 @@ int main() {
                 if (strcmp(item_name(cur), "Exit") == 0) {
                     goto end;  // Exit the menu loop
                 } else if (strcmp(item_name(cur), "Create New Rogue") == 0) {
-                    create_new_rogue(menu, menu_win);  // Pass the menu and menu_win
+                    create_new_rogue(menu, menu_win, COLOR_PAIR(2));  // Pass the menu and menu_win
                 }
             }
                 break;
@@ -141,33 +148,59 @@ void print_in_middle(WINDOW *win, int starty, int startx, int width, char *strin
 }
 
 // Function to handle the "Create New Rogue" option
-void create_new_rogue(MENU *menu, WINDOW *menu_win) {
+void create_new_rogue(MENU *menu, WINDOW *menu_win, chtype color) {
     clear();
-    WINDOW *form_win = newwin(12, 50, (LINES - 12) / 2, (COLS - 50) / 2);
+    WINDOW *form_win = newwin(14, 50, (LINES - 12) / 2, (COLS - 50) / 2);
     box(form_win, 0, 0);
     mvwprintw(form_win, 1, 2, "Create New Rogue");
     mvwhline(form_win, 2, 1, ACS_HLINE, 48);
     mvwprintw(form_win, 3, 2, "Enter Username:");
     mvwprintw(form_win, 5, 2, "Enter Password:");
+    mvwprintw(form_win, 7, 2, "Enter Email:");
 
-    char username[30], password[30];
+    char username[30], password[30], email[60];
     echo();
 
     mvwgetnstr(form_win, 3, 18, username, 29);
-    mvwgetnstr(form_win, 5, 18, password, 29);
+
+    while (1) { //check if password is valid
+        mvwgetnstr(form_win, 5, 18, password, 29);
+
+        if ( (strlen(password) > 7) && contains_uppercase(password) && contains_lowercase(password) && contains_number(password)) {
+            break;
+        } else {
+            mvwprintw(form_win, 9, 3, "Invalid Password");
+            wclrtoeol(form_win); // Clear the line below the message
+            mvwprintw(form_win, 5, 18, "                    "); // Clear the password input line
+            wrefresh(form_win);
+        }
+    }
+
+    while (1) {     //check if email is valid
+        mvwgetnstr(form_win, 7, 15, email, 29);
+
+        if (is_valid_email(email)) {
+            break;
+        } else {
+            mvwprintw(form_win, 9, 3, "Invalid Email Format!");
+            wclrtoeol(form_win);  // Clear the line below the message
+            mvwprintw(form_win, 7, 15, "             ");  // Clear the email input line
+            wrefresh(form_win);
+        }
+    }
 
     noecho();
 
     // Check and store user data
     const char *filename = "users.txt";
     if (username_exists(filename, username)) {
-        mvwprintw(form_win, 7, 2, "Username already exists! Try again.");
+        mvwprintw(form_win, 9, 3, "Username already exists! Try again.");
     } else {
         register_user(filename, username, password);
-        mvwprintw(form_win, 7, 2, "User registered successfully!");
+        mvwprintw(form_win, 9, 3, "User registered successfully!");
     }
 
-    mvwprintw(form_win, 9, 2, "Press any key to return to the menu...");
+    mvwprintw(form_win, 11, 3, "Press any key to return to the menu...");
     wrefresh(form_win);
     wgetch(form_win);
 
@@ -180,7 +213,43 @@ void create_new_rogue(MENU *menu, WINDOW *menu_win) {
     wrefresh(menu_win);
 }
 
+bool contains_number(const char *password) {
+    for (int i = 0; password[i] != '\0'; i++) {
+        if (isdigit(password[i])) {
+            return true;  // Found a digit
+        }
+    }
+    return false;  // No digits found
+}
 
+bool contains_uppercase(const char *password) {
+    for (int i = 0; password[i] != '\0'; i++) {
+        if (isupper(password[i])) {
+            return true;  // Found a capital letter
+        }
+    }
+    return false;  // No capital letter found
+}
+
+bool contains_lowercase(const char *password) {
+    for (int i = 0; password[i] != '\0'; i++) {
+        if (islower(password[i])) {
+            return true;  // Found a lowercase letter
+        }
+    }
+    return false;  // No lowercase letter found
+}
+
+bool is_valid_email(const char *email) {
+    const char *at = strchr(email, '@');
+    const char *dot = strrchr(email, '.');
+
+    // Check if '@' and '.' are present and in the correct order
+    if (at && dot && at < dot && dot - at > 1 && strlen(dot) > 1) {
+        return true;
+    }
+    return false;
+}
 
 bool username_exists(const char *filename, const char *username) {
     FILE *file = fopen(filename, "r");
