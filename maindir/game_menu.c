@@ -53,12 +53,12 @@ int main() {
 
     //show my name
     attron(A_BOLD |  COLOR_PAIR(1));
-    char message[] = "Welcome to  My ROGUE Game!";
+    char message[] = "ROGUE";
     mvprintw((LINES / 2)-1, (COLS - strlen(message)) / 2, "%s", message); // نمایش پیام در مرکز
     attroff(A_BOLD);
 
-    char credit[] = "Fatemeh Nilforoushan";
-    mvprintw((LINES/2)+1 , (COLS - strlen(credit))/2 ,"%s", credit);
+    char myname[] = "Fatemeh Nilforoushan";
+    mvprintw((LINES/2)+2 , (COLS - strlen(myname))/2 ,"%s", myname);
     attroff( COLOR_PAIR(1));
     refresh();
     sleep(2);
