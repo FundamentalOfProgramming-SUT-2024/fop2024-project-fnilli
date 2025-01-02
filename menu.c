@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <time.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define MAX_LENGTH 100
@@ -20,13 +21,19 @@ char *choices[] = {
 };
 
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
-void create_new_rogue(MENU *menu, WINDOW *menu_win, chtype color);// Function to handle the "Create New Rogue" option
+
+void create_new_rogue(MENU *menu, WINDOW *menu_win, chtype color);
 bool username_exists(const char *filename, const char *username);
 void register_user(const char *filename, const char *username, const char *password);
 bool contains_number(const char *password);
 bool contains_lowercase(const char *password);
 bool contains_uppercase(const char *password);
 bool is_valid_email(const char *email);
+char *generate_random_password();
+
+
+
+
 
 int main() {
     ITEM **items;
@@ -42,6 +49,7 @@ int main() {
     keypad(stdscr, TRUE);
     init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
+    init_pair(3, COLOR_RED, COLOR_BLACK);
 
     // Count the number of choices
     n_choices = ARRAY_SIZE(choices) - 1;
@@ -152,7 +160,9 @@ void create_new_rogue(MENU *menu, WINDOW *menu_win, chtype color) {
     clear();
     WINDOW *form_win = newwin(14, 50, (LINES - 12) / 2, (COLS - 50) / 2);
     box(form_win, 0, 0);
-    mvwprintw(form_win, 1, 2, "Create New Rogue");
+    wattron(form_win, COLOR_PAIR(2));
+    mvwprintw(form_win, 1, 16, "Create New Rogue");
+    wattroff(form_win, COLOR_PAIR(2));
     mvwhline(form_win, 2, 1, ACS_HLINE, 48);
     mvwprintw(form_win, 3, 2, "Enter Username:");
     mvwprintw(form_win, 5, 2, "Enter Password:");
@@ -161,20 +171,59 @@ void create_new_rogue(MENU *menu, WINDOW *menu_win, chtype color) {
     char username[30], password[30], email[60];
     echo();
 
-    mvwgetnstr(form_win, 3, 18, username, 29);
+    const char *filename = "users.txt";
+    while (1){
+        mvwgetnstr(form_win, 3, 18, username, 29);
 
-    while (1) { //check if password is valid
-        mvwgetnstr(form_win, 5, 18, password, 29);
+        if (username_exists(filename, username)) {
+            wattron(form_win, COLOR_PAIR(1));
+            mvwprintw(form_win, 9, 3, "Username already exists! Try again.");
+            wattroff(form_win, COLOR_PAIR(1));
+            wrefresh(form_win);
+            wclrtoeol(form_win);
+            mvwprintw(form_win, 3, 18, "                            ");
+            wrefresh(form_win);
+        } else{
+            break;
+        }
 
-        if ( (strlen(password) > 7) && contains_uppercase(password) && contains_lowercase(password) && contains_number(password)) {
+    }
+    mvwprintw(form_win, 9, 3, "                                             ");
+
+
+    while (1) {
+        wattron(form_win, COLOR_PAIR(2));
+        mvwprintw(form_win, 10, 3, "'R' for a random pass or enter your own");
+        wattroff(form_win, COLOR_PAIR(2));
+        mvwprintw(form_win, 5, 18, "                         ");  // Clear input field
+        wrefresh(form_win);
+
+        noecho();
+        int ch = wgetch(form_win);
+        echo();
+        if (ch == 'R' || ch == 'r') {
+            strcpy(password, generate_random_password());
+            mvwprintw(form_win, 5, 18, "%s", password);  // display generated password
             break;
         } else {
-            mvwprintw(form_win, 9, 3, "Invalid Password");
-            wclrtoeol(form_win); // Clear the line below the message
-            mvwprintw(form_win, 5, 18, "                    "); // Clear the password input line
-            wrefresh(form_win);
+            mvwprintw(form_win, 9, 3, "                                             ");
+            mvwgetnstr(form_win, 5, 18, password, 29);
+
+            if ((strlen(password) > 7) && contains_uppercase(password) && contains_lowercase(password) && contains_number(password)) {
+                break;
+            } else {
+                wattron(form_win, COLOR_PAIR(1));
+                mvwprintw(form_win, 9, 3, "Invalid Password! ");
+                wattroff(form_win, COLOR_PAIR(1));
+                wrefresh(form_win);
+            }
         }
     }
+    mvwprintw(form_win, 9, 3, "                                             ");
+    mvwprintw(form_win, 10, 3, "                                             ");
+
+
+
 
     while (1) {     //check if email is valid
         mvwgetnstr(form_win, 7, 15, email, 29);
@@ -182,8 +231,11 @@ void create_new_rogue(MENU *menu, WINDOW *menu_win, chtype color) {
         if (is_valid_email(email)) {
             break;
         } else {
+            wattron(form_win, COLOR_PAIR(1));
             mvwprintw(form_win, 9, 3, "Invalid Email Format!");
-            wclrtoeol(form_win);  // Clear the line below the message
+            wattroff(form_win, COLOR_PAIR(1));
+            wrefresh(form_win);
+            wclrtoeol(form_win);
             mvwprintw(form_win, 7, 15, "             ");  // Clear the email input line
             wrefresh(form_win);
         }
@@ -192,15 +244,21 @@ void create_new_rogue(MENU *menu, WINDOW *menu_win, chtype color) {
     noecho();
 
     // Check and store user data
-    const char *filename = "users.txt";
+//    const char *filename = "users.txt";
     if (username_exists(filename, username)) {
+        wattron(form_win, COLOR_PAIR(1));
         mvwprintw(form_win, 9, 3, "Username already exists! Try again.");
+        wattroff(form_win, COLOR_PAIR(1));
     } else {
         register_user(filename, username, password);
+        wattron(form_win, COLOR_PAIR(2));
         mvwprintw(form_win, 9, 3, "User registered successfully!");
+        wattroff(form_win, COLOR_PAIR(2));
     }
-
+    wattron(form_win, COLOR_PAIR(2));
     mvwprintw(form_win, 11, 3, "Press any key to return to the menu...");
+    wattroff(form_win, COLOR_PAIR(2));
+
     wrefresh(form_win);
     wgetch(form_win);
 
@@ -221,7 +279,6 @@ bool contains_number(const char *password) {
     }
     return false;  // No digits found
 }
-
 bool contains_uppercase(const char *password) {
     for (int i = 0; password[i] != '\0'; i++) {
         if (isupper(password[i])) {
@@ -230,7 +287,6 @@ bool contains_uppercase(const char *password) {
     }
     return false;  // No capital letter found
 }
-
 bool contains_lowercase(const char *password) {
     for (int i = 0; password[i] != '\0'; i++) {
         if (islower(password[i])) {
@@ -239,7 +295,40 @@ bool contains_lowercase(const char *password) {
     }
     return false;  // No lowercase letter found
 }
+char *generate_random_password() {
+    static char password[30];
+    const char *lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const char *uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const char *digits = "0123456789";
+    const char *special = "!@#$%^&*";
 
+    // Seed the random number generator
+    srand(time(NULL));
+
+    // Ensure at least one character of each type
+    password[0] = lowercase[rand() % strlen(lowercase)];
+    password[1] = uppercase[rand() % strlen(uppercase)];
+    password[2] = digits[rand() % strlen(digits)];
+    password[3] = special[rand() % strlen(special)];
+
+    // Fill the rest with random characters
+    const char *all_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    for (int i = 4; i < 12; i++) {  // Generate a 12-character password
+        password[i] = all_chars[rand() % strlen(all_chars)];
+    }
+
+    password[12] = '\0';  // Null-terminate the password
+
+    // Shuffle the password for randomness
+    for (int i = 0; i < 12; i++) {
+        int j = rand() % 12;
+        char temp = password[i];
+        password[i] = password[j];
+        password[j] = temp;
+    }
+
+    return password;
+}
 bool is_valid_email(const char *email) {
     const char *at = strchr(email, '@');
     const char *dot = strrchr(email, '.');
@@ -288,3 +377,4 @@ void register_user(const char *filename, const char *username, const char *passw
     fclose(file);
 //    printf("User '%s' registered successfully!\n", username);
 }
+
