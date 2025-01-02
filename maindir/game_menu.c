@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
+
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define MAX_LENGTH 100
@@ -17,7 +19,6 @@ char *choices[] = {
         "4. Exit",
         NULL,
 };
-
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 
 void create_new_rogue(MENU *menu, WINDOW *menu_win);
@@ -49,6 +50,21 @@ int main() {
     init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
     init_pair(3, COLOR_RED, COLOR_BLACK);
+
+    //show my name
+    attron(A_BOLD |  COLOR_PAIR(1));
+    char message[] = "Welcome to  My ROGUE Game!";
+    mvprintw((LINES / 2)-1, (COLS - strlen(message)) / 2, "%s", message); // نمایش پیام در مرکز
+    attroff(A_BOLD);
+
+    char credit[] = "Fatemeh Nilforoushan";
+    mvprintw((LINES/2)+1 , (COLS - strlen(credit))/2 ,"%s", credit);
+    attroff( COLOR_PAIR(1));
+    refresh();
+    sleep(2);
+    clear();
+
+
 
     // Count the number of choices
     n_choices = ARRAY_SIZE(choices) - 1;
@@ -135,6 +151,7 @@ int main() {
 
     return 0;
 }
+
 
 // Function to print text in the middle of a window
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color) {
