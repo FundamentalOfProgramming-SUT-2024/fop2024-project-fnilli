@@ -20,7 +20,10 @@ void generate_rooms(Room rooms[]);
 bool rooms_overlap(Room *a, Room *b);
 void connect_rooms(Room *a, Room *b);
 void draw_room(Room *room, int room_index);
-void draw_corridor(int x1, int y1, int x2, int y2);
+void connect_rooms(Room *a, Room *b) ;
+void draw_corridor(int x1, int y1, int x2, int y2) ;
+void place_door(int x1, int y1, int x2, int y2);
+
 
 int main() {
     initscr();            // Initialize ncurses
@@ -35,10 +38,15 @@ int main() {
     // Draw all rooms and connect them
     for (int i = 0; i < MAX_ROOMS; ++i) {
         draw_room(&room[i], i);
-        if (i > 0) {
-//            connect_rooms(&room[i - 1], &room[i]);
-        }
     }
+    connect_rooms(&room[0], &room[1]);
+    connect_rooms(&room[0], &room[2]);
+    connect_rooms(&room[1], &room[3]);
+    connect_rooms(&room[2], &room[3]);
+    connect_rooms(&room[2], &room[4]);
+    connect_rooms(&room[4], &room[5]);
+    connect_rooms(&room[3], &room[5]);
+
 
     // Wait for user input to exit
     getch();
@@ -66,8 +74,6 @@ void generate_rooms(Room room[] ) {
         while (true) {
             room[i].width = MIN_ROOM_SIZE + rand() % (MAX_ROOM_SIZE - MIN_ROOM_SIZE + 1);
             room[i].height = MIN_ROOM_SIZE + rand() % (MAX_ROOM_SIZE - MIN_ROOM_SIZE + 1);
-            // room[i].x = rand() % (COLS - room[i].width - 1);
-            // room[i].y = rand() % (LINES - room[i].height - 1);
             //دو خط زیر هر اتاق را در یکی از 6 بخش نقشه درست میکند
             room[i].x = rand_range(region_x, region_x + region_width - room[i].width);      //room made for splited screen
             room[i].y = rand_range(region_y, region_y + region_height - room[i].height);    //room made for splited screen
@@ -108,54 +114,76 @@ void draw_room(Room *room, int room_index) {
             mvaddch(y, x, '.');
         }
     }
-    // Place a door
-    int door_side, door_side2 = -1;
 
-    do { //در دو اتاق بالایی، در ضلع بالای انها نباشد و در دو اتاق پایینی، در ضلع پایین انها نباشد
+}
 
-        door_side = rand() % 4; // 0: top, 1: bottom, 2: left, 3: right
+void connect_rooms(Room *a, Room *b) {
+    srand(100000000);
 
-        // If the room is one of the two uppermost rooms, skip placing doors on the top wall
-        if ((room_index == 0 || room_index == 1) && door_side == 0) {
-            continue;
+    // get a cordination for each room's door
+    int x1 = a->x + (rand() % a->width + 1) ;
+    int y1 = a->y + (rand() % a->height +1);
+    int x2 = b->x + (rand() % b->width +1) ;
+    int y2 = b->y + (rand() % b->height +1);
+
+
+    // Draw a corridor between the centers
+    draw_corridor(x1, y1, x2, y2);
+}
+
+
+void draw_corridor(int x1, int y1, int x2, int y2) {
+
+    //draw horizontal part of the corridor
+    while (x1 != x2) {
+        if(x1 < x2){
+            x1++;
         }
-        else if ((room_index == 4 || room_index == 5) && door_side ==  1) {
-            continue;
+        else{
+            x1--;
         }
-        else if (room_index == 2 || room_index == 3) {
-            do {
-                door_side2 = rand() % 4;  // 0: top, 1: bottom, 2: left, 3: right
 
-            }while (door_side2 == door_side);
+        if (mvinch(y1, x1) == '_' || mvinch(y1, x1) == '|') {
 
+            if (y1 > 0 && mvinch(y1 - 1, x1) == ' ') {
+                mvaddch(y1 - 1, x1, '#'); //place corridor above
+            } else if (y1 < LINES - 1 && mvinch(y1 + 1, x1) == ' ') {
+                mvaddch(y1 + 1, x1, '#'); //place corridor below
+            }
         }
-        break; // Valid door_side selected
-    } while (true);
+        else if(mvinch(y1, x1)  == ' '){ //check if the cell is empty
+            mvprintw(y1, x1, "#");
+        }
 
-
-    //draw door
-    if (door_side == 0) {
-        mvaddch(room->y, room->x + 1 + rand() % (room->width - 2), '+');
-    } else if (door_side == 1) {
-        mvaddch(room->y + room->height - 1, room->x + 1 + rand() % (room->width - 2), '+');
-    } else if (door_side == 2) {
-        mvaddch(room->y + 1 + rand() % (room->height - 2), room->x, '+');
-    } else {
-        mvaddch(room->y + 1 + rand() % (room->height - 2), room->x + room->width - 1, '+');
     }
 
-    //draw second door
-    if (room_index == 2 || room_index == 3) {
-        if (door_side2 == 0) {
-            mvaddch(room->y, room->x + 1 + rand() % (room->width - 2), '+');
-        } else if (door_side2 == 1) {
-            mvaddch(room->y + room->height - 1, room->x + 1 + rand() % (room->width - 2), '+');
-        } else if (door_side2 == 2) {
-            mvaddch(room->y + 1 + rand() % (room->height - 2), room->x, '+');
-        } else {
-            mvaddch(room->y + 1 + rand() % (room->height - 2), room->x + room->width - 1, '+');
+    // Draw vertical part of the corridor
+    while(y1 != y2){
+        if(y1 < y2){
+            y1++;
+        }
+        else{
+            y1--;
+        }
+
+        if(mvinch(y1, x1) == '|' || mvinch(y1, x1) == '_'){
+            if (x2 > 0 && mvinch(y1, x2 - 1) == ' ') {
+                mvaddch(y1, x2 - 1, '#'); // Place corridor to the left
+            } else if (x2 < COLS - 1 && mvinch(y1, x2 + 1) == ' ') {
+                mvaddch(y1, x2 + 1, '#'); // Place corridor to the right
+            }
+        }
+        else if(mvinch(y1, x1) == ' '){  // Check if the cell is empty
+            mvprintw(y1, x1, "#");
         }
     }
+
+
+}
+
+
+void place_door(int x1, int y1, int x2, int y2) {
+
 
 }
 
