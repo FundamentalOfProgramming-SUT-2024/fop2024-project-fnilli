@@ -16,8 +16,13 @@ void start_ncurses();
 void start_colors();
 void start_game();
 void start_menu();
-void start_map();
+void start_map(Room room[]);
+void start_player_position(Pos *player, Room room[]) ;
 void handle_movement(int ch, Pos *p, char map[LINES][COLS]);
+bool is_corridor(char map[LINES][COLS],Pos player);
+bool is_room(char map[LINES][COLS],Pos player);
+
+
 void save_screen_to_array(char map[LINES][COLS]);
 void print_map_from_array(char map[LINES][COLS]) ;
 void save_map_to_file(const char *filename, char map[LINES][COLS]);
@@ -32,13 +37,13 @@ int main() {
     start_menu();
 
     curs_set(FALSE);
-    start_map();
+    Room room[MAX_ROOMS];
+    start_map(room);
     char map[LINES][COLS];
     save_screen_to_array(map);
     save_map_to_file("map.txt", map);
+    start_player_position(&player, room);
 
-    player.x = 10;
-    player.y = 10;
     while (1) {
         //DRAW MAP
         print_map_from_array(map);
@@ -53,8 +58,7 @@ int main() {
 
     }
 
-    endwin();
-    return 0;
+
 }
 
 void start_ncurses() {
@@ -194,9 +198,8 @@ void start_menu() {
 
     }
 }
-void start_map() {
+void start_map(Room room[]) {
     clear();
-    Room room[MAX_ROOMS];
     generate_rooms(room);
 
     // Draw all rooms and connect them
@@ -213,59 +216,96 @@ void start_map() {
 
     refresh();
 }
+void start_player_position(Pos *player,Room room[]) {
+    int which_room = rand() % 6;
+    // int x = rand() % (room[which_room].width + 1);
+    // int y = rand() % (room[which_room].height + 1);
+
+    player->x = 3 + room->x;
+    player->y = 3 + room->y;
+}
+
 void handle_movement(int ch, Pos *player, char map[LINES][COLS]){
 
-    if (ch == 'k' || ch == 'K' || ch == '8' || ch == KEY_UP) {      //move up
-         if (player->y > 0 && map[player->y - 1][player->x] != '_' ) {
-            player->y -- ;
+    if (player->y > 0 && player->y < LINES - 1 && player->x > 0 && player->x < COLS - 1) {
+
+        if (ch == 'k' || ch == 'K' || ch == '8' || ch == KEY_UP) {      //move up
+            if (is_corridor(map, *player) && map[player->y - 1][player->x] == '#' && map[player->y - 1][player->x] == '+')
+                player->y -- ;
+            if  (is_room(map, *player) && map[player->y - 1][player->x] != '_' && map[player->y - 1][player->x] != '|')
+                player->y -- ;
+
         }
-    }
-    else if (ch == 'j' || ch == 'J' || ch == '2' || ch == KEY_DOWN) {   //move down
-        if (player->y < LINES - 1 && map[player->y + 1][player->x] != '_')
-            player->y ++ ;
-    }
-    else if (ch == 'h' || ch == 'H' || ch == '4' || ch == KEY_LEFT) {  //move left
-        if (player->x > 0 && map[player->y][player->x - 1] != '|')
-            player->x -- ;
-    }
-    else if (ch == 'l' || ch == 'L' || ch == '6' || ch == KEY_RIGHT) {   //move right
-        if (player->x < COLS - 1 && map[player->y][player->x + 1] != '|')
-            player->x ++ ;
-    }
-    else if (ch == 'u' || ch == 'U' ) {   //اریب بالا راست
-        if ((player->y > 0)  && (player->x < COLS - 1)){
-            player->y -- ;
-            player->x ++ ;
-}
-    }
-    else if (ch == 'y' || ch == 'Y' ) {   //اریب بالا چپ
-        if ((player->y > 0)  && (player->x > 0)){
-            player->y -- ;
-            player->x -- ;
+        else if (ch == 'j' || ch == 'J' || ch == '2' || ch == KEY_DOWN) {   //move down
+            if ((is_corridor(map, *player) && map[player->y + 1][player->x] == '#' && map[player->y + 1][player->x] == '+') || (is_room(map, *player) && map[player->y + 1][player->x] != '_' && map[player->y + 1][player->x] != '|') )
+                player->y ++ ;
         }
-    }
-    else if (ch == 'n' || ch == 'N' ) {   //اریب پایین راست
-        if ((player->y < LINES - 1)  && (player->x < COLS - 1)){
-            player->y ++ ;
-            player->x ++ ;
+        else if (ch == 'h' || ch == 'H' || ch == '4' || ch == KEY_LEFT) {
+            //move left
+            if ((is_corridor(map, *player) && map[player->y][player->x - 1] == '#' && map[player->y][player->x - 1] == '+') || (is_room(map, *player) && map[player->y][player->x - 1] != '_' && map[player->y][player->x - 1] != '|') )
+                player->x -- ;
         }
-    }
-    else if (ch == 'b' || ch == 'B' ) {   //اریب پایین چپ
-        if ((player->y < LINES - 1)  && (player->x > 0)) {
-            player->y ++ ;
-            player->x -- ;
+        else if (ch == 'l' || ch == 'L' || ch == '6' || ch == KEY_RIGHT) {   //move right
+                if ((is_corridor(map, *player) && map[player->y][player->x + 1] == '#' && map[player->y][player->x + 1] == '+') || (is_room(map, *player) && map[player->y][player->x + 1] != '_' && map[player->y][player->x + 1] != '|') )
+                    player->x ++ ;
         }
-    }
-    else if (ch == 'q' || ch == 'Q') {
-        endwin();
-        exit(0);
-    }
-    else {
-        mvprintw(0, 0, "Invalid Command");
-        refresh();
+        // else if (ch == 'u' || ch == 'U' ) {   //اریب بالا راست
+        //     if (){
+        //         player->y -- ;
+        //         player->x ++ ;
+        //     }
+        // }
+        // else if (ch == 'y' || ch == 'Y' ) {   //اریب بالا چپ
+        //     if (){
+        //         player->y -- ;
+        //         player->x -- ;
+        //     }
+        // }
+        // else if (ch == 'n' || ch == 'N' ) {   //اریب پایین راست
+        //     if (){
+        //         player->y ++ ;
+        //         player->x ++ ;
+        //     }
+        // }
+        // else if (ch == 'b' || ch == 'B' ) {   //اریب پایین چپ
+        //     if () {
+        //         player->y ++ ;
+        //         player->x -- ;
+        //     }
+        // }
+        else if (ch == 'q' || ch == 'Q') {
+            endwin();
+            exit(0);
+        }
+        else {
+            mvprintw(0, 0, "Invalid Command");
+            refresh();
+        }
+
     }
 
+
+
 }
+
+bool is_corridor(char map[LINES][COLS],Pos player) {
+    if (map[player.y][player.x] == '#' || map[player.y][player.x] == '+') {
+        return true;
+    }
+    return false;
+
+}
+
+
+bool is_room(char map[LINES][COLS], Pos player) {
+    if (map[player.y][player.x] == '.' || map[player.y][player.x] == '+') {
+        return true;
+    }
+    return false;
+
+}
+
+
 
 void save_screen_to_array(char map[LINES][COLS]) {
     for (int y = 0; y < LINES; ++y) {
