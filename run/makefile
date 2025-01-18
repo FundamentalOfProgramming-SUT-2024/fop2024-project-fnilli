@@ -1,13 +1,13 @@
 CC = gcc
 CFLAGS = -lncurses -lmenu -I./*.h
-SOURCES = ./*.c
-all: rogue run clean
+SOURCES = ./main.c
+all: main run clean
 
-rogue:
-	$(CC) $(SOURCES) $(CFLAGS) -o rogue
+main:
+	$(CC) $(SOURCES) $(CFLAGS) -o main
 
 run:
-	./rogue
+	./main
 
 clean:
-	rm rogue
+	rm main

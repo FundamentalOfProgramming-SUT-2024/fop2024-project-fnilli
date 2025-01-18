@@ -11,7 +11,7 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define MAX_LENGTH 100
-// Menu choices
+
 char *choices[] = {
         "1. Create New Rogue",
         "2. Rogue Login",
@@ -19,8 +19,9 @@ char *choices[] = {
         "4. Exit",
         NULL,
 };
-void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 
+
+void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 void create_new_rogue(MENU *menu, WINDOW *menu_win);
 bool username_exists(const char *filename, const char *username);
 void register_user(const char *filename, const char *username, const char *password);
@@ -499,8 +500,7 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
             "2. Continue Last Game",
             "3. Score Board",
             "4. Setting",
-            "5. Profile",
-            "6. Return to Main Menu",
+            "5. Return to Main Menu",
             NULL
     };
 
@@ -544,7 +544,7 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
                 ITEM *cur = current_item(sub_menu);
                 const char *name = item_name(cur);
 
-                if (strcmp(name, "6. Return to Main Menu") == 0) {
+                if (strcmp(name, "5. Return to Main Menu") == 0) {
                     goto end;
                 } else if (strcmp(name,"1. Create New Game") == 0) {
                     mvwprintw(sub_menu_win, 10, 2, "Create New Game is displayed here!");
@@ -554,8 +554,6 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
                     mvwprintw(sub_menu_win, 10, 2, "Score Board is here!");
                 } else if (strcmp(name, "4. Setting") == 0) {
                     mvwprintw(sub_menu_win, 10, 2, "Game Settings are here!");
-                } else if(strcmp(name, "5. Profile") == 0){
-                    mvwprintw(sub_menu_win, 10, 2, "Profile is here!");
                 }
                 wclrtoeol(sub_menu_win);
                 wrefresh(sub_menu_win);

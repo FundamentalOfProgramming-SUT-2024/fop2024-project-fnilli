@@ -14,7 +14,6 @@ typedef struct {
     int height;    // Room height
 } Room;
 
-// Function prototypes
 int rand_range(int min, int max);
 void generate_rooms(Room rooms[]);
 bool rooms_overlap(Room *a, Room *b);
@@ -22,15 +21,14 @@ void connect_rooms(Room *a, Room *b);
 void draw_room(Room *room, int room_index);
 void connect_rooms(Room *a, Room *b) ;
 void draw_corridor(int x1, int y1, int x2, int y2) ;
-void place_door(int x1, int y1, int x2, int y2);
 
 
 int main() {
-    initscr();            // Initialize ncurses
-    noecho();             // Disable echoing
-    cbreak();             // Disable line buffering
-    curs_set(0);          // Hide the cursor
-    srand(time(NULL));    // Seed for random number generation
+    initscr();
+    noecho();
+    cbreak();
+    curs_set(FALSE);
+    srand(time(NULL));
 
     Room room[MAX_ROOMS];
     generate_rooms(room);
@@ -118,13 +116,12 @@ void draw_room(Room *room, int room_index) {
 }
 
 void connect_rooms(Room *a, Room *b) {
-    srand(100000000);
 
     // get a cordination for each room's door
-    int x1 = a->x + (rand() % a->width + 1) ;
-    int y1 = a->y + (rand() % a->height +1);
-    int x2 = b->x + (rand() % b->width +1) ;
-    int y2 = b->y + (rand() % b->height +1);
+    int x1 = a->x + (rand() % a->width) ;
+    int y1 = a->y + (rand() % a->height);
+    int x2 = b->x + (rand() % b->width) ;
+    int y2 = b->y + (rand() % b->height);
 
 
     // Draw a corridor between the centers
@@ -134,6 +131,7 @@ void connect_rooms(Room *a, Room *b) {
 
 void draw_corridor(int x1, int y1, int x2, int y2) {
 
+    int oncex=0, oncey=0;
     //draw horizontal part of the corridor
     while (x1 != x2) {
         if(x1 < x2){
@@ -145,6 +143,10 @@ void draw_corridor(int x1, int y1, int x2, int y2) {
 
         if (mvinch(y1, x1) == '_' || mvinch(y1, x1) == '|') {
 
+            if (!oncex) {
+                mvprintw(y1, x1, "+");
+                oncex = 1;
+            }
             if (y1 > 0 && mvinch(y1 - 1, x1) == ' ') {
                 mvaddch(y1 - 1, x1, '#'); //place corridor above
             } else if (y1 < LINES - 1 && mvinch(y1 + 1, x1) == ' ') {
@@ -167,6 +169,10 @@ void draw_corridor(int x1, int y1, int x2, int y2) {
         }
 
         if(mvinch(y1, x1) == '|' || mvinch(y1, x1) == '_'){
+            if (!oncey) {
+                mvprintw(y1, x1, "+");
+                oncey = 1;
+            }
             if (x2 > 0 && mvinch(y1, x2 - 1) == ' ') {
                 mvaddch(y1, x2 - 1, '#'); // Place corridor to the left
             } else if (x2 < COLS - 1 && mvinch(y1, x2 + 1) == ' ') {
@@ -177,14 +183,8 @@ void draw_corridor(int x1, int y1, int x2, int y2) {
             mvprintw(y1, x1, "#");
         }
     }
-
-
 }
 
 
-void place_door(int x1, int y1, int x2, int y2) {
-
-
-}
 
 

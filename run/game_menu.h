@@ -1,3 +1,6 @@
+#ifndef GAME_MENU_H
+#define GAME_MENU_H
+
 
 #include <ncurses.h>
 #include <menu.h>
@@ -9,15 +12,14 @@
 #include <time.h>
 #include <unistd.h>
 
-// Constants
+
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define MAX_LENGTH 100
 
+bool successfully_logged_in = false;
 
-// Menu choices
-
+//prototypes
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
-
 void create_new_rogue(MENU *menu, WINDOW *menu_win);
 bool username_exists(const char *filename, const char *username);
 void register_user(const char *filename, const char *username, const char *password);
@@ -26,14 +28,12 @@ bool contains_lowercase(const char *password);
 bool contains_uppercase(const char *password);
 bool is_valid_email(const char *email);
 char *generate_random_password();
-
 void login_rogue(MENU *menu, WINDOW *menu_win);
 bool validate_credentials(const char *filename, const char *username, const char *password);
-
 void before_you_play(MENU *menu, WINDOW *menu_win);
 
 
-// Function to print text in the middle of a window
+//function to print text in the middle of a window
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color) {
     int length, x, y;
     float temp;
@@ -306,12 +306,12 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
         mvwprintw(form_win, 9, 3, "Logged in as Guest Player!");
         wattroff(form_win, COLOR_PAIR(2));
         wrefresh(form_win);
-        wgetch(form_win);
+
+        successfully_logged_in = true;
+        sleep(1);
         delwin(form_win);
         clear();
         refresh();
-        post_menu(menu);
-        wrefresh(menu_win);
         return;
     }
 
@@ -326,6 +326,14 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
         wattron(form_win, COLOR_PAIR(2));
         mvwprintw(form_win, 9, 3, "Login successful!");
         wattroff(form_win, COLOR_PAIR(2));
+        wrefresh(form_win);
+
+        successfully_logged_in = true;
+        sleep(1);
+        delwin(form_win);
+        clear();
+        refresh();
+        return;
     } else {
         mvwprintw(form_win, 9, 2, "                                             ");
         wattron(form_win, COLOR_PAIR(1));
@@ -350,6 +358,7 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
 
 
 }
+
 bool validate_credentials(const char *filename, const char *username, const char *password) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -379,8 +388,7 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
             "2. Continue Last Game",
             "3. Score Board",
             "4. Setting",
-            "5. Profile",
-            "6. Return to Main Menu",
+            "5. Return to Main Menu",
             NULL
     };
 
@@ -424,7 +432,7 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
                 ITEM *cur = current_item(sub_menu);
                 const char *name = item_name(cur);
 
-                if (strcmp(name, "6. Return to Main Menu") == 0) {
+                if (strcmp(name, "5. Return to Main Menu") == 0) {
                     goto end;
                 } else if (strcmp(name,"1. Create New Game") == 0) {
                     mvwprintw(sub_menu_win, 10, 2, "Create New Game is displayed here!");
@@ -434,8 +442,6 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
                     mvwprintw(sub_menu_win, 10, 2, "Score Board is here!");
                 } else if (strcmp(name, "4. Setting") == 0) {
                     mvwprintw(sub_menu_win, 10, 2, "Game Settings are here!");
-                } else if(strcmp(name, "5. Profile") == 0){
-                    mvwprintw(sub_menu_win, 10, 2, "Profile is here!");
                 }
                 wclrtoeol(sub_menu_win);
                 wrefresh(sub_menu_win);
@@ -458,3 +464,6 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
     post_menu(menu);
     wrefresh(menu_win);
 }
+
+
+#endif
