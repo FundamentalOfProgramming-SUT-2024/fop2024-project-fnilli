@@ -30,11 +30,12 @@ bool contains_lowercase(const char *password);
 bool contains_uppercase(const char *password);
 bool is_valid_email(const char *email);
 char *generate_random_password();
-
 void login_rogue(MENU *menu, WINDOW *menu_win);
 bool validate_credentials(const char *filename, const char *username, const char *password);
-
 void before_you_play(MENU *menu, WINDOW *menu_win);
+void game_setting(MENU *menu, WINDOW *menu_win);
+void game_difficulty(MENU *menu, WINDOW *menu_win);
+
 
 int main() {
     ITEM **items;
@@ -62,7 +63,7 @@ int main() {
     mvprintw((LINES/2)+2 , (COLS - strlen(myname))/2 ,"%s", myname);
     attroff( COLOR_PAIR(1));
     refresh();
-    sleep(2);
+    sleep(0.5);
     clear();
 
 
@@ -494,13 +495,15 @@ bool validate_credentials(const char *filename, const char *username, const char
 
 
 void before_you_play(MENU *menu, WINDOW *menu_win) {
+    clear();
+    refresh();
     // Submenu options
     char *sub_choices[] = {
             "1. Create New Game",
             "2. Continue Last Game",
             "3. Score Board",
             "4. Setting",
-            "5. Return to Main Menu",
+            "5. Return",
             NULL
     };
 
@@ -526,10 +529,12 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
     mvwaddch(sub_menu_win, 2, 0, ACS_LTEE);
     mvwhline(sub_menu_win, 2, 1, ACS_HLINE, 38);
     mvwaddch(sub_menu_win, 2, 39, ACS_RTEE);
+    refresh();
 
     // Post the menu
     post_menu(sub_menu);
     wrefresh(sub_menu_win);
+    refresh();
 
     int c;
     while ((c = wgetch(sub_menu_win)) != 'q') {
@@ -544,8 +549,9 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
                 ITEM *cur = current_item(sub_menu);
                 const char *name = item_name(cur);
 
-                if (strcmp(name, "5. Return to Main Menu") == 0) {
+                if (strcmp(name, "5. Return") == 0) {
                     goto end;
+
                 } else if (strcmp(name,"1. Create New Game") == 0) {
                     mvwprintw(sub_menu_win, 10, 2, "Create New Game is displayed here!");
                 } else if (strcmp(name, "2. Continue Last Game") == 0) {
@@ -553,7 +559,7 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
                 } else if (strcmp(name, "3. Score Board") == 0) {
                     mvwprintw(sub_menu_win, 10, 2, "Score Board is here!");
                 } else if (strcmp(name, "4. Setting") == 0) {
-                    mvwprintw(sub_menu_win, 10, 2, "Game Settings are here!");
+                    game_setting(sub_menu, sub_menu_win);
                 }
                 wclrtoeol(sub_menu_win);
                 wrefresh(sub_menu_win);
@@ -576,3 +582,178 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
     post_menu(menu);
     wrefresh(menu_win);
 }
+
+void game_setting(MENU *menu, WINDOW *menu_win) {
+    char *setting_options[] = {
+        "1. Game Difficulty",
+        "2. Change Rogue Color",
+        "3. Choose Music",
+        "4. Return",
+        NULL
+        };
+    int n_setting_choices = ARRAY_SIZE(setting_options) - 1;
+    ITEM **setting_items = (ITEM **)calloc(n_setting_choices + 1, sizeof(ITEM *));
+    for (int i = 0; i < n_setting_choices; ++i)
+        setting_items[i] = new_item(setting_options[i], NULL);
+    setting_items[n_setting_choices] = NULL;
+
+    MENU *setting_menu = new_menu((ITEM **)setting_items);
+
+    // Create setting window
+    WINDOW *setting_menu_win = newwin(12, 40, (LINES - 12) / 2, (COLS - 40) / 2);
+    keypad(setting_menu_win, TRUE);
+
+    set_menu_win(setting_menu, setting_menu_win);
+    set_menu_sub(setting_menu, derwin(setting_menu_win, 8, 38, 3, 1));
+    set_menu_mark(setting_menu, " > ");
+
+    // Print a border and title
+    box(setting_menu_win, 0, 0);
+    print_in_middle(setting_menu_win, 1, 0, 40, "Game Setting", COLOR_PAIR(1));
+    mvwaddch(setting_menu_win, 2, 0, ACS_LTEE);
+    mvwhline(setting_menu_win, 2, 1, ACS_HLINE, 38);
+    mvwaddch(setting_menu_win, 2, 39, ACS_RTEE);
+
+    // Post the menu
+    post_menu(setting_menu);
+    wrefresh(setting_menu_win);
+
+    int c;
+    while ((c = wgetch(setting_menu_win)) != 'q') {
+        switch (c) {
+            case KEY_DOWN:
+                menu_driver(setting_menu, REQ_DOWN_ITEM);
+            break;
+            case KEY_UP:
+                menu_driver(setting_menu, REQ_UP_ITEM);
+            break;
+            case 10: {  // Enter key
+                ITEM *cur = current_item(setting_menu);
+                const char *name = item_name(cur);
+
+                if (strcmp(name, "4. Return") == 0) {
+                    goto end;
+                } else if (strcmp(name,"1. Game Difficulty") == 0) {
+                    game_difficulty(setting_menu, setting_menu_win);
+
+                } else if (strcmp(name, "2. Change Rogue Color") == 0) {
+
+                } else if (strcmp(name, "3. Choose Music") == 0) {
+
+                }
+                wclrtoeol(setting_menu_win);
+                wrefresh(setting_menu_win);
+            }
+            break;
+        }
+    }
+    end:
+    // Cleanup
+    unpost_menu(setting_menu);
+    free_menu(setting_menu);
+    for (int i = 0; i < n_setting_choices; ++i)
+        free_item(setting_items[i]);
+    delwin(setting_menu_win);
+
+    // Return to last menu
+    clear();
+    refresh();
+    // post_menu(menu);
+    // wrefresh(menu_win);
+    // refresh();
+    before_you_play(menu, menu_win);
+
+}
+
+void game_difficulty(MENU *menu, WINDOW *menu_win) {
+    clear();
+    refresh();
+    char *difficulty_choices[] = {
+        "1. Easy",
+        "2. Medium",
+        "3. Hard",
+        "4. Return",
+        NULL,
+    };
+
+    int n_sub_choices = ARRAY_SIZE(difficulty_choices) - 1;
+    ITEM **sub_items = (ITEM **)calloc(n_sub_choices + 1, sizeof(ITEM *));
+    for (int i = 0; i < n_sub_choices; ++i)
+        sub_items[i] = new_item(difficulty_choices[i], NULL);
+    sub_items[n_sub_choices] = NULL;
+
+    MENU *sub_menu = new_menu((ITEM **)sub_items);
+    // Create submenu window
+    WINDOW *sub_menu_win = newwin(12, 40, (LINES - 12) / 2, (COLS - 40) / 2);
+    keypad(sub_menu_win, TRUE);
+
+    set_menu_win(sub_menu, sub_menu_win);
+    set_menu_sub(sub_menu, derwin(sub_menu_win, 8, 38, 3, 1));
+    set_menu_mark(sub_menu, " > ");
+
+    // Print a border and title
+    box(sub_menu_win, 0, 0);
+    print_in_middle(sub_menu_win, 1, 0, 40, "Game Difficulty", COLOR_PAIR(1));
+    mvwaddch(sub_menu_win, 2, 0, ACS_LTEE);
+    mvwhline(sub_menu_win, 2, 1, ACS_HLINE, 38);
+    mvwaddch(sub_menu_win, 2, 39, ACS_RTEE);
+    refresh();
+
+    // Post the menu
+    post_menu(sub_menu);
+    wrefresh(sub_menu_win);
+    refresh();
+
+
+
+
+    char selected_difficulty[20] = "Medium";  // Default difficulty
+    int c;
+    while ((c = wgetch(sub_menu_win)) != 'q') {
+        switch (c) {
+            case KEY_DOWN:
+                menu_driver(sub_menu, REQ_DOWN_ITEM);
+                break;
+            case KEY_UP:
+                menu_driver(sub_menu, REQ_UP_ITEM);
+                break;
+            case 10: {  // Enter key
+                ITEM *cur = current_item(sub_menu);
+                const char *name = item_name(cur);
+
+                if (strcmp(name, "4. Return") == 0) {
+                    goto end;
+                } else if (strcmp(name,"1. Easy") == 0) {
+                    mvwprintw(sub_menu_win, 9, 4, "Difficulty: EASY");
+
+                } else if (strcmp(name, "2. Medium") == 0) {
+                    mvwprintw(sub_menu_win, 9, 4, "Difficulty: MEDIUM");
+
+                } else if (strcmp(name, "3. Hard") == 0) {
+                    mvwprintw(sub_menu_win, 9, 4, "Difficulty: HARD");
+
+                }
+                wclrtoeol(sub_menu_win);
+                wrefresh(sub_menu_win);
+            }
+                break;
+        }
+        wrefresh(sub_menu_win);
+    }
+
+    end:
+    // Cleanup
+unpost_menu(sub_menu);
+    free_menu(sub_menu);
+    for (int i = 0; i < n_sub_choices; ++i)
+        free_item(sub_items[i]);
+    delwin(sub_menu_win);
+
+    // Return to main menu
+    clear();
+    refresh();
+    // post_menu(menu);
+    // wrefresh(menu_win);
+    game_setting(menu, menu_win);
+}
+

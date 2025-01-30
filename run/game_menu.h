@@ -1,24 +1,15 @@
 #ifndef GAME_MENU_H
 #define GAME_MENU_H
 
-
-#include <ncurses.h>
-#include <menu.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <ctype.h>
-#include <time.h>
-#include <unistd.h>
+#include "essentials.h"
 
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
-#define MAX_LENGTH 100
 
-bool successfully_logged_in = false;
+Player player;
+int difficulty_level = 2; //default: medium
 
 //prototypes
+void start_menu();
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
 void create_new_rogue(MENU *menu, WINDOW *menu_win);
 bool username_exists(const char *filename, const char *username);
@@ -31,7 +22,139 @@ char *generate_random_password();
 void login_rogue(MENU *menu, WINDOW *menu_win);
 bool validate_credentials(const char *filename, const char *username, const char *password);
 void before_you_play(MENU *menu, WINDOW *menu_win);
+void game_setting(MENU *menu, WINDOW *menu_win);
+void game_difficulty(MENU *menu, WINDOW *menu_win);
+void player_color(MENU *menu, WINDOW *menu_win);
+void before_you_play(MENU *menu, WINDOW *menu_win);
+void resume_game(MENU *menu, WINDOW *menu_win);
+void new_game(MENU *menu, WINDOW *menu_win);
+void start_music(MENU *menu, WINDOW *menu_win);
 
+
+
+
+
+void start_menu() {
+    // clear();
+    // refresh();
+    player.logged_in = false;
+    player.game_difficulty = 2;
+    player.guest = false;
+    char *choices[] = {
+        "1. Rogue Login",
+        "2. Create New Rogue",
+        "3. Before You Play",
+        "4. Exit",
+        NULL,
+    };
+    ITEM **items;
+    MENU *menu;
+    WINDOW *menu_win;
+    int n_choices, c, i;
+
+        // Count the number of choices
+    n_choices = ARRAY_SIZE(choices) - 1;
+
+    // Create items
+    items = (ITEM **)calloc(n_choices + 1, sizeof(ITEM *));
+    for (i = 0; i < n_choices; ++i)
+        items[i] = new_item(choices[i], NULL);
+    items[n_choices] = NULL;
+
+    // Create menu
+    menu = new_menu((ITEM **)items);
+
+    // Create menu window
+    int win_width = 40, win_height = 10;
+    int startx = (COLS - win_width) / 2;
+    int starty = (LINES - win_height) / 2;
+    menu_win = newwin(win_height, win_width, starty, startx);
+    keypad(menu_win, TRUE);
+
+    // Set menu window and subwindow
+    set_menu_win(menu, menu_win);
+    set_menu_sub(menu, derwin(menu_win, win_height - 4, win_width - 2, 3, 1));
+
+    // Set menu mark
+    set_menu_mark(menu, " * ");
+
+    // Print a border and title
+    box(menu_win, 0, 0);
+    print_in_middle(menu_win, 1, 0, win_width, "Game Menu", COLOR_PAIR(1));
+    mvwaddch(menu_win, 2, 0, ACS_LTEE);
+    mvwhline(menu_win, 2, 1, ACS_HLINE, win_width - 2);
+    mvwaddch(menu_win, 2, win_width - 1, ACS_RTEE);
+
+    refresh();
+    // Post the menu
+    post_menu(menu);
+    wrefresh(menu_win);
+
+    // Menu interaction loop
+    while ((c = wgetch(menu_win)) != 'q' ) {
+        if (player.resume_game_bool || player.creat_game_bool) break;
+        switch (c) {
+            case KEY_DOWN:
+                menu_driver(menu, REQ_DOWN_ITEM);
+                break;
+            case KEY_UP:
+                menu_driver(menu, REQ_UP_ITEM);
+                break;
+            case 10:  // Enter key
+            {
+                ITEM *cur = current_item(menu);
+                if (strcmp(item_name(cur), "4. Exit") == 0) {
+                    // Exit the menu loop
+                    unpost_menu(menu);
+                    free_menu(menu);
+                    for (i = 0; i < n_choices; ++i)
+                        free_item(items[i]);
+                    endwin();
+                    exit(0);
+
+                } else if (strcmp(item_name(cur), "2. Create New Rogue") == 0) {
+                    create_new_rogue(menu, menu_win);
+                } else if (strcmp(item_name(cur), "1. Rogue Login") == 0) {
+                    login_rogue(menu, menu_win);
+                } else if (strcmp(item_name(cur), "3. Before You Play") == 0) {
+                    before_you_play(menu, menu_win);
+                }
+
+            }
+                break;
+
+        }
+
+        // if (player.logged_in == false) {
+        //     clear();
+        //     refresh();
+        //     set_menu_win(menu, menu_win);
+        //     set_menu_sub(menu, derwin(menu_win, win_height - 4, win_width - 2, 3, 1));
+        //
+        //     // Set menu mark
+        //     set_menu_mark(menu, " * ");
+        //
+        //     // Print a border and title
+        //     box(menu_win, 0, 0);
+        //     print_in_middle(menu_win, 1, 0, win_width, "Game Menu", COLOR_PAIR(1));
+        //     mvwaddch(menu_win, 2, 0, ACS_LTEE);
+        //     mvwhline(menu_win, 2, 1, ACS_HLINE, win_width - 2);
+        //     mvwaddch(menu_win, 2, win_width - 1, ACS_RTEE);
+        //
+        //     refresh();
+        //     // Post the menu
+        //     post_menu(menu);
+        //     wrefresh(menu_win);
+        // }
+    }
+    if (player.resume_game_bool || player.creat_game_bool){
+        unpost_menu(menu);
+        free_menu(menu);
+        for (i = 0; i < n_choices; ++i)
+            free_item(items[i]);
+
+    }
+}
 
 //function to print text in the middle of a window
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color) {
@@ -141,33 +264,50 @@ void create_new_rogue(MENU *menu, WINDOW *menu_win) {
 
     noecho();
 
-    // Check and store user data
-//    const char *filename = "users.txt";
+
     if (username_exists(filename, username)) {
         wattron(form_win, COLOR_PAIR(1));
-        mvwprintw(form_win, 9, 3, "Username already exists! Try again.");
+        mvwprintw(form_win, 9, 3, "Username Already Exists! Try Again.");
         wattroff(form_win, COLOR_PAIR(1));
     }
     else {
         register_user(filename, username, password);
         wattron(form_win, COLOR_PAIR(2));
-        mvwprintw(form_win, 9, 3, "User registered successfully!");
+        mvwprintw(form_win, 10, 2, "User Registered Successfully!");
         wattroff(form_win, COLOR_PAIR(2));
+        wrefresh(form_win);
+        // wgetch(form_win);
+
+        strcpy(player.username, username);
+        strcpy(player.password, password);
+        strcpy(player.email, email);
+        player.logged_in = true;
+
+
     }
     wattron(form_win, COLOR_PAIR(2));
-    mvwprintw(form_win, 11, 3, "Press any key to return to the menu...");
+    mvwprintw(form_win, 11, 3, "Go To Pre-Game Menu...");
     wattroff(form_win, COLOR_PAIR(2));
-
     wrefresh(form_win);
     wgetch(form_win);
 
     delwin(form_win);
-
-    // Clear and redisplay the menu
     clear();
     refresh();
+    // Clear and redisplay the menu
+    set_menu_win(menu, menu_win);
+    set_menu_mark(menu, " * ");
+    // Print a border and title
+    box(menu_win, 0, 0);
+    print_in_middle(menu_win, 1, 0, 40, "Game Menu", COLOR_PAIR(1));
+    mvwaddch(menu_win, 2, 0, ACS_LTEE);
+    mvwhline(menu_win, 2, 1, ACS_HLINE, 40 - 2);
+    mvwaddch(menu_win, 2, 40 - 1, ACS_RTEE);
+    refresh();
+    // Post the menu
     post_menu(menu);
     wrefresh(menu_win);
+    return;
 }
 
 bool contains_number(const char *password) {
@@ -292,8 +432,6 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
     wattron(form_win, COLOR_PAIR(2));
     mvwprintw(form_win, 9, 2, "Enter Username or press 'G' for Guest Player");
     wattroff(form_win, COLOR_PAIR(2));
-
-
     char username[30], password[30];
     echo();
 
@@ -301,17 +439,33 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
 
     // Check if user wants to log in as Guest
     if (strlen(username) == 1 && (username[0] == 'G' || username[0] == 'g')) {
+        player.guest = true;
+        player.logged_in = true;
+
         mvwprintw(form_win, 9, 2, "                                             ");
         wattron(form_win, COLOR_PAIR(2));
         mvwprintw(form_win, 9, 3, "Logged in as Guest Player!");
+        mvwprintw(form_win, 11, 3, "Go To Pre-Game Menu...");
         wattroff(form_win, COLOR_PAIR(2));
         wrefresh(form_win);
+        wgetch(form_win);
 
-        successfully_logged_in = true;
-        sleep(1);
         delwin(form_win);
         clear();
         refresh();
+        // Clear and redisplay the menu
+        set_menu_win(menu, menu_win);
+        set_menu_mark(menu, " * ");
+        // Print a border and title
+        box(menu_win, 0, 0);
+        print_in_middle(menu_win, 1, 0, 40, "Game Menu", COLOR_PAIR(1));
+        mvwaddch(menu_win, 2, 0, ACS_LTEE);
+        mvwhline(menu_win, 2, 1, ACS_HLINE, 40 - 2);
+        mvwaddch(menu_win, 2, 40 - 1, ACS_RTEE);
+        refresh();
+        // Post the menu
+        post_menu(menu);
+        wrefresh(menu_win);
         return;
     }
 
@@ -322,43 +476,61 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
     // Verify username and password
     const char *filename = "users.txt";
     if (validate_credentials(filename, username, password)) {
-        mvwprintw(form_win, 9, 2, "                                             ");
+        strcpy(player.username, username);
+        strcpy(player.password, password);
+        player.logged_in = true;
+
+        mvwprintw(form_win, 9, 2, "                                            ");
         wattron(form_win, COLOR_PAIR(2));
-        mvwprintw(form_win, 9, 3, "Login successful!");
+        mvwprintw(form_win, 9, 3, "Welcome %s!", username);
+        mvwprintw(form_win, 11, 3, "Go To Pre-Game Menu...");
         wattroff(form_win, COLOR_PAIR(2));
         wrefresh(form_win);
+        wgetch(form_win);
 
-        successfully_logged_in = true;
-        sleep(1);
         delwin(form_win);
         clear();
         refresh();
+        // Clear and redisplay the menu
+        set_menu_win(menu, menu_win);
+        set_menu_mark(menu, " * ");
+        // Print a border and title
+        box(menu_win, 0, 0);
+        print_in_middle(menu_win, 1, 0, 40, "Game Menu", COLOR_PAIR(1));
+        mvwaddch(menu_win, 2, 0, ACS_LTEE);
+        mvwhline(menu_win, 2, 1, ACS_HLINE, 40 - 2);
+        mvwaddch(menu_win, 2, 40 - 1, ACS_RTEE);
+
+        refresh();
+        // Post the menu
+        post_menu(menu);
+        wrefresh(menu_win);
         return;
-    } else {
+
+    }
         mvwprintw(form_win, 9, 2, "                                             ");
         wattron(form_win, COLOR_PAIR(1));
         mvwprintw(form_win, 9, 3, "Invalid username or password!");
         wattroff(form_win, COLOR_PAIR(1));
 
-    }
+        wattron(form_win, COLOR_PAIR(2));
+        mvwprintw(form_win, 11, 3, "Press any key to return to the menu...");
+        wattroff(form_win, COLOR_PAIR(2));
+        wrefresh(form_win);
+        wgetch(form_win);
 
-    wattron(form_win, COLOR_PAIR(2));
-    mvwprintw(form_win, 11, 3, "Press any key to return to the menu...");
-    wattroff(form_win, COLOR_PAIR(2));
-    wrefresh(form_win);
-    wgetch(form_win);
+        delwin(form_win);
 
-    delwin(form_win);
+        // Clear and redisplay the menu
+        clear();
+        refresh();
+        post_menu(menu);
+        wrefresh(menu_win);
 
-    // Clear and redisplay the menu
-    clear();
-    refresh();
-    post_menu(menu);
-    wrefresh(menu_win);
+
 
 
 }
-
 bool validate_credentials(const char *filename, const char *username, const char *password) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -380,15 +552,15 @@ bool validate_credentials(const char *filename, const char *username, const char
     return false;
 }
 
-
 void before_you_play(MENU *menu, WINDOW *menu_win) {
-    // Submenu options
+    clear();
+    refresh();
     char *sub_choices[] = {
-            "1. Create New Game",
-            "2. Continue Last Game",
+            "1. New Game",
+            "2. Resume Game",
             "3. Score Board",
             "4. Setting",
-            "5. Return to Main Menu",
+            "5. Return",
             NULL
     };
 
@@ -418,6 +590,354 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
     // Post the menu
     post_menu(sub_menu);
     wrefresh(sub_menu_win);
+    int c;
+    while ((c = wgetch(sub_menu_win)) != 'q') {
+        if (player.resume_game_bool || player.creat_game_bool)  break;
+        switch (c) {
+            case KEY_DOWN:
+                menu_driver(sub_menu, REQ_DOWN_ITEM);
+                break;
+            case KEY_UP:
+                menu_driver(sub_menu, REQ_UP_ITEM);
+                break;
+            case 10: {  // Enter key
+                ITEM *cur = current_item(sub_menu);
+                const char *name = item_name(cur);
+                if (strcmp(name, "5. Return") == 0) {
+                    // Cleanup
+                    unpost_menu(sub_menu);
+                    free_menu(sub_menu);
+                    for (int i = 0; i < n_sub_choices; ++i)
+                        free_item(sub_items[i]);
+                    delwin(sub_menu_win);
+
+                    // Return to main menu
+                    clear();
+                    refresh();
+                    // Print a border and title
+                    box(menu_win, 0, 0);
+                    print_in_middle(menu_win, 1, 0, 40, "Game Menu", COLOR_PAIR(1));
+                    mvwaddch(menu_win, 2, 0, ACS_LTEE);
+                    mvwhline(menu_win, 2, 1, ACS_HLINE, 40 - 2);
+                    mvwaddch(menu_win, 2, 40 - 1, ACS_RTEE);
+
+                    refresh();
+                    // Post the menu
+                    post_menu(menu);
+                    wrefresh(menu_win);
+                    post_menu(menu);
+                    wrefresh(menu_win);
+                    return;
+                    // start_menu();
+                } else if (strcmp(name,"1. New Game") == 0) {
+                    resume_game(sub_menu, sub_menu_win);
+                } else if (strcmp(name, "2. Resume Game") == 0) {
+                    new_game(sub_menu, sub_menu_win);
+                } else if (strcmp(name, "3. Score Board") == 0) {
+
+                } else if (strcmp(name, "4. Setting") == 0) {
+                    game_setting(sub_menu, sub_menu_win);
+                }
+                wclrtoeol(sub_menu_win);
+                wrefresh(sub_menu_win);
+            }
+                break;
+        }
+    }
+}
+
+void resume_game(MENU *menu, WINDOW *menu_win) {
+    if (player.logged_in == true) {
+        unpost_menu(menu);
+        free_menu(menu);
+        delwin(menu_win);
+        clear();
+        refresh();
+        mvwprintw(menu_win, 9, 3, "DONE");
+        player.resume_game_bool = true;
+        return;
+    }
+
+    // if (player.logged_in == false)
+    wattron(menu_win, COLOR_PAIR(2));
+    mvwprintw(menu_win, 9, 3, "Please Login First");
+    wattroff(menu_win, COLOR_PAIR(2));
+    wrefresh(menu_win);
+    wgetch(menu_win);
+}
+
+void new_game(MENU *menu, WINDOW *menu_win) {
+    if (player.logged_in == true) {
+        unpost_menu(menu);
+        free_menu(menu);
+        delwin(menu_win);
+        clear();
+        refresh();
+        mvwprintw(menu_win, 9, 3, "DONE");
+        player.creat_game_bool = true;
+        return;
+    }
+
+    // if (player.logged_in == false)
+    wattron(menu_win, COLOR_PAIR(2));
+    mvwprintw(menu_win, 9, 3, "Please Login First");
+    wattroff(menu_win, COLOR_PAIR(2));
+    wrefresh(menu_win);
+    wgetch(menu_win);
+}
+
+
+void game_setting(MENU *menu, WINDOW *menu_win) {
+    clear();
+    refresh();
+    char *setting_options[] = {
+        "1. Game Difficulty",
+        "2. Change Rogue Color",
+        "3. Choose Music",
+        "4. Return",
+        NULL
+        };
+    int n_setting_choices = ARRAY_SIZE(setting_options) - 1;
+    ITEM **setting_items = (ITEM **)calloc(n_setting_choices + 1, sizeof(ITEM *));
+    for (int i = 0; i < n_setting_choices; ++i)
+        setting_items[i] = new_item(setting_options[i], NULL);
+    setting_items[n_setting_choices] = NULL;
+
+    MENU *setting_menu = new_menu((ITEM **)setting_items);
+
+    // Create setting window
+    WINDOW *setting_menu_win = newwin(12, 40, (LINES - 12) / 2, (COLS - 40) / 2);
+    keypad(setting_menu_win, TRUE);
+
+    set_menu_win(setting_menu, setting_menu_win);
+    set_menu_sub(setting_menu, derwin(setting_menu_win, 8, 38, 3, 1));
+    set_menu_mark(setting_menu, " > ");
+
+    // Print a border and title
+    box(setting_menu_win, 0, 0);
+    print_in_middle(setting_menu_win, 1, 0, 40, "Setting", COLOR_PAIR(1));
+    mvwaddch(setting_menu_win, 2, 0, ACS_LTEE);
+    mvwhline(setting_menu_win, 2, 1, ACS_HLINE, 38);
+    mvwaddch(setting_menu_win, 2, 39, ACS_RTEE);
+
+    // Post the menu
+    post_menu(setting_menu);
+    wrefresh(setting_menu_win);
+
+    int c;
+    while ((c = wgetch(setting_menu_win)) != 'q') {
+        switch (c) {
+            case KEY_DOWN:
+                menu_driver(setting_menu, REQ_DOWN_ITEM);
+            break;
+            case KEY_UP:
+                menu_driver(setting_menu, REQ_UP_ITEM);
+            break;
+            case 10: {  // Enter key
+                ITEM *cur = current_item(setting_menu);
+                const char *name = item_name(cur);
+
+                if (strcmp(name, "4. Return") == 0) {
+                    // Cleanup
+                    unpost_menu(setting_menu);
+                    free_menu(setting_menu);
+                    for (int i = 0; i < n_setting_choices; ++i)
+                        free_item(setting_items[i]);
+                    delwin(setting_menu_win);
+
+                    // Return to main menu
+                    clear();
+                    refresh();
+                    // set_menu_win(menu, menu_win);
+                    // set_menu_sub(menu, derwin(menu_win, 8, 38, 3, 1));
+                    // set_menu_mark(menu, " > ");
+
+                    // Print a border and title
+                    box(menu_win, 0, 0);
+                    print_in_middle(menu_win, 1, 0, 40, "Before You Play", COLOR_PAIR(1));
+                    mvwaddch(menu_win, 2, 0, ACS_LTEE);
+                    mvwhline(menu_win, 2, 1, ACS_HLINE, 38);
+                    mvwaddch(menu_win, 2, 39, ACS_RTEE);
+
+                    // Post the menu
+                    post_menu(menu);
+                    wrefresh(menu_win);
+                    return;
+
+                    // post_menu(menu);
+                    // wrefresh(menu_win);
+                    // return;
+                    // before_you_play(menu, menu_win);
+
+                } else if (strcmp(name,"1. Game Difficulty") == 0) {
+                    game_difficulty(setting_menu, setting_menu_win);
+
+                } else if (strcmp(name, "2. Change Rogue Color") == 0) {
+                    player_color(setting_menu, setting_menu_win);
+
+                } else if (strcmp(name, "3. Choose Music") == 0) {
+
+                }
+                wclrtoeol(setting_menu_win);
+                wrefresh(setting_menu_win);
+            }
+            break;
+        }
+    }
+
+
+
+}
+void game_difficulty(MENU *menu, WINDOW *menu_win) {
+    clear();
+    refresh();
+    char *difficulty_choices[] = {
+        "1. Easy",
+        "2. Medium",
+        "3. Hard",
+        "4. Return",
+        NULL,
+    };
+
+    int n_sub_choices = ARRAY_SIZE(difficulty_choices) - 1;
+    ITEM **sub_items = (ITEM **)calloc(n_sub_choices + 1, sizeof(ITEM *));
+    for (int i = 0; i < n_sub_choices; ++i)
+        sub_items[i] = new_item(difficulty_choices[i], NULL);
+    sub_items[n_sub_choices] = NULL;
+
+    MENU *sub_menu = new_menu((ITEM **)sub_items);
+    // Create submenu window
+    WINDOW *sub_menu_win = newwin(12, 40, (LINES - 12) / 2, (COLS - 40) / 2);
+    keypad(sub_menu_win, TRUE);
+
+    set_menu_win(sub_menu, sub_menu_win);
+    set_menu_sub(sub_menu, derwin(sub_menu_win, 8, 38, 3, 1));
+    set_menu_mark(sub_menu, " > ");
+
+    // Print a border and title
+    box(sub_menu_win, 0, 0);
+    print_in_middle(sub_menu_win, 1, 0, 40, "Game Difficulty", COLOR_PAIR(1));
+    mvwaddch(sub_menu_win, 2, 0, ACS_LTEE);
+    mvwhline(sub_menu_win, 2, 1, ACS_HLINE, 38);
+    mvwaddch(sub_menu_win, 2, 39, ACS_RTEE);
+    refresh();
+
+    // Post the menu
+    post_menu(sub_menu);
+    wrefresh(sub_menu_win);
+    refresh();
+
+
+
+
+    char selected_difficulty[20] = "Medium";  // Default difficulty
+    int c;
+    while ((c = wgetch(sub_menu_win)) != 'q') {
+        switch (c) {
+            case KEY_DOWN:
+                menu_driver(sub_menu, REQ_DOWN_ITEM);
+                break;
+            case KEY_UP:
+                menu_driver(sub_menu, REQ_UP_ITEM);
+                break;
+            case 10: {  // Enter key
+                ITEM *cur = current_item(sub_menu);
+                const char *name = item_name(cur);
+                wattron(sub_menu_win, COLOR_PAIR(2));
+
+
+                if (strcmp(name, "4. Return") == 0) {
+                    // Cleanup
+                    unpost_menu(sub_menu);
+                    free_menu(sub_menu);
+                    for (int i = 0; i < n_sub_choices; ++i)
+                        free_item(sub_items[i]);
+                    delwin(sub_menu_win);
+
+                    // Return to main menu
+                    clear();
+                    refresh();
+                    set_menu_win(menu, menu_win);
+                    set_menu_sub(menu, derwin(menu_win, 8, 38, 3, 1));
+                    set_menu_mark(menu, " > ");
+
+                    // Print a border and title
+                    box(menu_win, 0, 0);
+                    print_in_middle(menu_win, 1, 0, 40, "Setting", COLOR_PAIR(1));
+                    mvwaddch(menu_win, 2, 0, ACS_LTEE);
+                    mvwhline(menu_win, 2, 1, ACS_HLINE, 38);
+                    mvwaddch(menu_win, 2, 39, ACS_RTEE);
+
+                    // Post the menu
+                    post_menu(menu);
+                    wrefresh(menu_win);
+                    return;
+
+                } else if (strcmp(name,"1. Easy") == 0) {
+                    mvwprintw(sub_menu_win, 9, 4, "Difficulty: EASY");
+                    player.game_difficulty = 1;
+
+                } else if (strcmp(name, "2. Medium") == 0) {
+                    mvwprintw(sub_menu_win, 9, 4, "Difficulty: MEDIUM");
+                    player.game_difficulty = 2;
+
+                } else if (strcmp(name, "3. Hard") == 0) {
+                    mvwprintw(sub_menu_win, 9, 4, "Difficulty: HARD");
+                    player.game_difficulty = 3;
+                }
+                wattroff(sub_menu_win, COLOR_PAIR(2));
+                wclrtoeol(sub_menu_win);
+                wrefresh(sub_menu_win);
+            }
+                break;
+        }
+        wrefresh(sub_menu_win);
+    }
+
+
+
+
+}
+void player_color(MENU *menu, WINDOW *menu_win) {
+    clear();
+    refresh();
+    char *color_choices[] = {
+        "1. Red",
+        "2. Blue",
+        "3. Green",
+        "4. Yellow",
+        "5. Magenta",
+        "6. Return",
+        NULL,
+    };
+
+    int n_sub_choices = ARRAY_SIZE(color_choices) - 1;
+    ITEM **sub_items = (ITEM **)calloc(n_sub_choices + 1, sizeof(ITEM *));
+    for (int i = 0; i < n_sub_choices; ++i)
+        sub_items[i] = new_item(color_choices[i], NULL);
+    sub_items[n_sub_choices] = NULL;
+
+    MENU *sub_menu = new_menu((ITEM **)sub_items);
+    // Create submenu window
+    WINDOW *sub_menu_win = newwin(12, 40, (LINES - 12) / 2, (COLS - 40) / 2);
+    keypad(sub_menu_win, TRUE);
+
+    set_menu_win(sub_menu, sub_menu_win);
+    set_menu_sub(sub_menu, derwin(sub_menu_win, 8, 38, 3, 1));
+    set_menu_mark(sub_menu, " > ");
+
+    // Print a border and title
+    box(sub_menu_win, 0, 0);
+    print_in_middle(sub_menu_win, 1, 0, 40, "Choose Player Color", COLOR_PAIR(1));
+    mvwaddch(sub_menu_win, 2, 0, ACS_LTEE);
+    mvwhline(sub_menu_win, 2, 1, ACS_HLINE, 38);
+    mvwaddch(sub_menu_win, 2, 39, ACS_RTEE);
+    refresh();
+
+    // Post the menu
+    post_menu(sub_menu);
+    wrefresh(sub_menu_win);
+    refresh();
 
     int c;
     while ((c = wgetch(sub_menu_win)) != 'q') {
@@ -431,38 +951,67 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
             case 10: {  // Enter key
                 ITEM *cur = current_item(sub_menu);
                 const char *name = item_name(cur);
+                wattron(sub_menu_win, COLOR_PAIR(2));
 
-                if (strcmp(name, "5. Return to Main Menu") == 0) {
-                    goto end;
-                } else if (strcmp(name,"1. Create New Game") == 0) {
-                    mvwprintw(sub_menu_win, 10, 2, "Create New Game is displayed here!");
-                } else if (strcmp(name, "2. Continue Last Game") == 0) {
-                    mvwprintw(sub_menu_win, 10, 2, "Continue Last Game is displayed here!");
-                } else if (strcmp(name, "3. Score Board") == 0) {
-                    mvwprintw(sub_menu_win, 10, 2, "Score Board is here!");
-                } else if (strcmp(name, "4. Setting") == 0) {
-                    mvwprintw(sub_menu_win, 10, 2, "Game Settings are here!");
+
+                if (strcmp(name, "6. Return") == 0) {
+                    // Cleanup
+                    unpost_menu(sub_menu);
+                    free_menu(sub_menu);
+                    for (int i = 0; i < n_sub_choices; ++i)
+                        free_item(sub_items[i]);
+                    delwin(sub_menu_win);
+
+                    // Return to main menu
+                    clear();
+                    refresh();
+                    set_menu_win(menu, menu_win);
+                    set_menu_sub(menu, derwin(menu_win, 8, 38, 3, 1));
+                    set_menu_mark(menu, " > ");
+
+                    // Print a border and title
+                    box(menu_win, 0, 0);
+                    print_in_middle(menu_win, 1, 0, 40, "Setting", COLOR_PAIR(1));
+                    mvwaddch(menu_win, 2, 0, ACS_LTEE);
+                    mvwhline(menu_win, 2, 1, ACS_HLINE, 38);
+                    mvwaddch(menu_win, 2, 39, ACS_RTEE);
+
+                    // Post the menu
+                    post_menu(menu);
+                    wrefresh(menu_win);
+                    return;
+                    // game_setting(menu, menu_win);
+
+                } else if (strcmp(name,"1. Red") == 0) {
+                    mvwprintw(sub_menu_win, 10, 5, "Rogue Color: Red");
+                    player.player_color = 3;
+
+                } else if (strcmp(name, "2. Blue") == 0) {
+                    mvwprintw(sub_menu_win, 10, 5, "Rogue Color: Blue");
+                    player.player_color = 5;
+
+                } else if (strcmp(name, "3. Green") == 0) {
+                    mvwprintw(sub_menu_win, 10, 5, "Rogue Color: Green");
+                    player.player_color = 4;
+
+                }else if (strcmp(name, "4. Yellow") == 0) {
+                    mvwprintw(sub_menu_win, 10, 5, "Rogue Color: Yellow");
+                    player.player_color = 7;
+
+                }else if (strcmp(name, "5. Magenta") == 0) {
+                    mvwprintw(sub_menu_win, 10, 5, "Rogue Color: Magenta");
+                    player.player_color = 1;
                 }
+                wattroff(sub_menu_win, COLOR_PAIR(2));
                 wclrtoeol(sub_menu_win);
                 wrefresh(sub_menu_win);
             }
                 break;
         }
+        wrefresh(sub_menu_win);
     }
 
-    end:
-    // Cleanup
-    unpost_menu(sub_menu);
-    free_menu(sub_menu);
-    for (int i = 0; i < n_sub_choices; ++i)
-        free_item(sub_items[i]);
-    delwin(sub_menu_win);
 
-    // Return to main menu
-    clear();
-    refresh();
-    post_menu(menu);
-    wrefresh(menu_win);
 }
 
 
