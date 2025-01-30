@@ -73,7 +73,7 @@ typedef struct {
     bool creat_game_bool;
     int game_difficulty;
     int player_color;
-
+    int song;
 
 
     Pos player_pos;

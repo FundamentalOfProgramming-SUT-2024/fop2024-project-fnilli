@@ -28,8 +28,8 @@ void player_color(MENU *menu, WINDOW *menu_win);
 void before_you_play(MENU *menu, WINDOW *menu_win);
 void resume_game(MENU *menu, WINDOW *menu_win);
 void new_game(MENU *menu, WINDOW *menu_win);
-void start_music(MENU *menu, WINDOW *menu_win);
-
+void select_music(MENU *menu, WINDOW *menu_win);
+void play_music(const char *filename) ;
 
 
 
@@ -692,7 +692,7 @@ void game_setting(MENU *menu, WINDOW *menu_win) {
     refresh();
     char *setting_options[] = {
         "1. Game Difficulty",
-        "2. Change Rogue Color",
+        "2. Rogue Color",
         "3. Choose Music",
         "4. Return",
         NULL
@@ -772,11 +772,11 @@ void game_setting(MENU *menu, WINDOW *menu_win) {
                 } else if (strcmp(name,"1. Game Difficulty") == 0) {
                     game_difficulty(setting_menu, setting_menu_win);
 
-                } else if (strcmp(name, "2. Change Rogue Color") == 0) {
+                } else if (strcmp(name, "2. Rogue Color") == 0) {
                     player_color(setting_menu, setting_menu_win);
 
                 } else if (strcmp(name, "3. Choose Music") == 0) {
-
+                    select_music(setting_menu, setting_menu_win);
                 }
                 wclrtoeol(setting_menu_win);
                 wrefresh(setting_menu_win);
@@ -1013,6 +1013,148 @@ void player_color(MENU *menu, WINDOW *menu_win) {
 
 
 }
+void play_music(const char *filename) {
+    Mix_HaltMusic();  // Stop current music
 
+    Mix_Music *music = Mix_LoadMUS(filename);
+    if (!music) {
+        printf("Failed to load music: %s\n", Mix_GetError());
+        endwin();
+        exit(0);
+        return;
+    }
+
+    Mix_PlayMusic(music, -1);  // Play new music in a loop
+}
+void select_music(MENU *menu, WINDOW *menu_win) {
+    clear();
+    refresh();
+    char *music_choices[] = {
+        "1. Stranger Things",
+        "2. Sneaky Snitch",
+        "3. Pixel Dreams",
+        "4. Pixel Fight",
+        "5. Music Off ",
+        "6. Return",
+        NULL,
+    };
+
+    int n_sub_choices = ARRAY_SIZE(music_choices) - 1;
+    ITEM **sub_items = (ITEM **)calloc(n_sub_choices + 1, sizeof(ITEM *));
+    for (int i = 0; i < n_sub_choices; ++i)
+        sub_items[i] = new_item(music_choices[i], NULL);
+    sub_items[n_sub_choices] = NULL;
+
+    MENU *sub_menu = new_menu((ITEM **)sub_items);
+    // Create submenu window
+    WINDOW *sub_menu_win = newwin(12, 40, (LINES - 12) / 2, (COLS - 40) / 2);
+    keypad(sub_menu_win, TRUE);
+
+    set_menu_win(sub_menu, sub_menu_win);
+    set_menu_sub(sub_menu, derwin(sub_menu_win, 8, 38, 3, 1));
+    set_menu_mark(sub_menu, " > ");
+
+    // Print a border and title
+    box(sub_menu_win, 0, 0);
+    print_in_middle(sub_menu_win, 1, 0, 40, "Choose Music", COLOR_PAIR(1));
+    mvwaddch(sub_menu_win, 2, 0, ACS_LTEE);
+    mvwhline(sub_menu_win, 2, 1, ACS_HLINE, 38);
+    mvwaddch(sub_menu_win, 2, 39, ACS_RTEE);
+    refresh();
+
+    // Post the menu
+    post_menu(sub_menu);
+    wrefresh(sub_menu_win);
+    refresh();
+
+    int c;
+    while ((c = wgetch(sub_menu_win)) != 'q') {
+        switch (c) {
+            case KEY_DOWN:
+                menu_driver(sub_menu, REQ_DOWN_ITEM);
+                break;
+            case KEY_UP:
+                menu_driver(sub_menu, REQ_UP_ITEM);
+                break;
+            case 10: {  // Enter key
+                ITEM *cur = current_item(sub_menu);
+                const char *name = item_name(cur);
+                wattron(sub_menu_win, COLOR_PAIR(2));
+
+
+                if (strcmp(name, "6. Return") == 0) {
+                    // Cleanup
+                    unpost_menu(sub_menu);
+                    free_menu(sub_menu);
+                    for (int i = 0; i < n_sub_choices; ++i)
+                        free_item(sub_items[i]);
+                    delwin(sub_menu_win);
+
+                    // Return to main menu
+                    clear();
+                    refresh();
+                    set_menu_win(menu, menu_win);
+                    set_menu_sub(menu, derwin(menu_win, 8, 38, 3, 1));
+                    set_menu_mark(menu, " > ");
+
+                    // Print a border and title
+                    box(menu_win, 0, 0);
+                    print_in_middle(menu_win, 1, 0, 40, "Setting", COLOR_PAIR(1));
+                    mvwaddch(menu_win, 2, 0, ACS_LTEE);
+                    mvwhline(menu_win, 2, 1, ACS_HLINE, 38);
+                    mvwaddch(menu_win, 2, 39, ACS_RTEE);
+
+                    // Post the menu
+                    post_menu(menu);
+                    wrefresh(menu_win);
+                    return;
+                    // game_setting(menu, menu_win);
+
+                } else if (strcmp(name,"1. Stranger Things") == 0) {
+                    mvwprintw(sub_menu_win, 10, 4, "Let's Listen to Stranger Things");
+                    player.song = 1;
+                    play_music("stranger_things.mp3");
+
+
+                } else if (strcmp(name, "2. Sneaky Snitch") == 0) {
+                    mvwprintw(sub_menu_win, 10, 4, "Let's Listen to Sneaky Snitch");
+                    player.song = 2;
+                    play_music("sneaky_snitch.mp3");
+
+                } else if (strcmp(name, "3. Pixel Dreams") == 0) {
+                    mvwprintw(sub_menu_win, 10, 4, "Let's Listen to Pixel Dreams");
+                    player.song = 3;
+                    play_music("pixel_dreams.mp3");
+
+
+
+                }else if (strcmp(name, "4. Pixel Fight") == 0) {
+                    mvwprintw(sub_menu_win, 10, 4, "Let's Listen to Pixel Fight");
+                    player.song = 4;
+                    play_music("pixel_fight.mp3");
+
+
+
+                }else if (strcmp(name, "5. Music Off") == 0) {
+                    mvwprintw(sub_menu_win, 10, 4, "OK, No Music...");
+                    player.song = 5;
+                    Mix_HaltMusic();  // Stop current music
+                    Mix_CloseAudio();
+                    SDL_Quit();
+
+                }
+                wattroff(sub_menu_win, COLOR_PAIR(2));
+                wclrtoeol(sub_menu_win);
+                wrefresh(sub_menu_win);
+            }
+                break;
+        }
+        wrefresh(sub_menu_win);
+    }
+
+
+
+
+}
 
 #endif

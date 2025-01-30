@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -lncurses -lmenu -I./*.h
+CFLAGS = -lncurses -lmenu -lSDL2 -lSDL2_mixer -I./*.h
 SOURCES = ./main.c
 all: main run clean
 

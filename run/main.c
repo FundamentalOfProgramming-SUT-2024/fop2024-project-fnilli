@@ -12,7 +12,7 @@ void handle_movement(int ch,  char map[MAX_ROW][COLS]);
 bool is_corridor(char map[MAX_ROW][COLS]);
 bool is_room(char map[MAX_ROW][COLS]);
 void draw_player();
-
+void start_music();
 void save_screen_to_array(char map[MAX_ROW][COLS]);
 void print_map_from_array(char map[MAX_ROW][COLS]) ;
 void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]);
@@ -24,8 +24,8 @@ int main() {
 
     start_ncurses();
     start_game();
+    start_music();
     start_menu();
-
     curs_set(FALSE);
     Room room[MAX_ROOMS];
     start_map(room);
@@ -115,6 +115,29 @@ void start_game() {
     sleep(1);
     clear();
     refresh();
+
+}
+void start_music() {
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
+        endwin();
+        exit(0);
+        return ;
+    }
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        printf("SDL_mixer could not initialize! Mix Error: %s\n", Mix_GetError());
+        endwin();
+        exit(0);
+        return ;
+    }
+    Mix_Music *bgMusic = Mix_LoadMUS("stranger_things.mp3");
+    if (!bgMusic) {
+        printf("Failed to load music! Mix Error: %s\n", Mix_GetError());
+        endwin();
+        exit(0);
+    }
+    Mix_PlayMusic(bgMusic, 3);
 
 }
 void start_map(Room room[]) {
