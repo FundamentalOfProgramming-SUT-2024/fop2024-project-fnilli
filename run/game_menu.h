@@ -40,6 +40,9 @@ void start_menu() {
     player.logged_in = false;
     player.game_difficulty = 2;
     player.guest = false;
+    player.creat_game_bool = false;
+    player.resume_game_bool = false;
+
     char *choices[] = {
         "1. Rogue Login",
         "2. Create New Rogue",
@@ -416,7 +419,7 @@ void register_user(const char *filename, const char *username, const char *passw
 }
 
 
-// "Rogue Login" option
+// "Rogue Login" menu
 void login_rogue(MENU *menu, WINDOW *menu_win) {
     clear();
     WINDOW *form_win = newwin(14, 50, (LINES - 12) / 2, (COLS - 50) / 2);
@@ -552,6 +555,7 @@ bool validate_credentials(const char *filename, const char *username, const char
     return false;
 }
 
+//"Before You Play" menu
 void before_you_play(MENU *menu, WINDOW *menu_win) {
     clear();
     refresh();
@@ -629,10 +633,13 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
                     wrefresh(menu_win);
                     return;
                     // start_menu();
-                } else if (strcmp(name,"1. New Game") == 0) {
-                    resume_game(sub_menu, sub_menu_win);
-                } else if (strcmp(name, "2. Resume Game") == 0) {
+                }
+                else if (strcmp(name,"1. New Game") == 0) {
                     new_game(sub_menu, sub_menu_win);
+
+                } else if (strcmp(name, "2. Resume Game") == 0) {
+                    resume_game(sub_menu, sub_menu_win);
+
                 } else if (strcmp(name, "3. Score Board") == 0) {
 
                 } else if (strcmp(name, "4. Setting") == 0) {
@@ -645,27 +652,6 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
         }
     }
 }
-
-void resume_game(MENU *menu, WINDOW *menu_win) {
-    if (player.logged_in == true) {
-        unpost_menu(menu);
-        free_menu(menu);
-        delwin(menu_win);
-        clear();
-        refresh();
-        mvwprintw(menu_win, 9, 3, "DONE");
-        player.resume_game_bool = true;
-        return;
-    }
-
-    // if (player.logged_in == false)
-    wattron(menu_win, COLOR_PAIR(2));
-    mvwprintw(menu_win, 9, 3, "Please Login First");
-    wattroff(menu_win, COLOR_PAIR(2));
-    wrefresh(menu_win);
-    wgetch(menu_win);
-}
-
 void new_game(MENU *menu, WINDOW *menu_win) {
     if (player.logged_in == true) {
         unpost_menu(menu);
@@ -686,7 +672,36 @@ void new_game(MENU *menu, WINDOW *menu_win) {
     wgetch(menu_win);
 }
 
+void resume_game(MENU *menu, WINDOW *menu_win) {
+    if (player.guest) {
+        wattron(menu_win, COLOR_PAIR(2));
+        mvwprintw(menu_win, 9, 3, "You Don't Have Any Game History");
+        mvwprintw(menu_win, 10, 3, "Start a New Game");
+        wattroff(menu_win, COLOR_PAIR(2));
+        wrefresh(menu_win);
+        wgetch(menu_win);
+        return;
+    }
+    if (!player.guest && player.logged_in) {
+        unpost_menu(menu);
+        free_menu(menu);
+        delwin(menu_win);
+        clear();
+        refresh();
+        mvwprintw(menu_win, 9, 3, "Let's Go");
+        player.resume_game_bool = true;
+        return;
+    }
 
+    // if (player.logged_in == false)
+    wattron(menu_win, COLOR_PAIR(2));
+    mvwprintw(menu_win, 9, 3, "Please Login First");
+    wattroff(menu_win, COLOR_PAIR(2));
+    wrefresh(menu_win);
+    wgetch(menu_win);
+}
+
+//"Setting" menu
 void game_setting(MENU *menu, WINDOW *menu_win) {
     clear();
     refresh();
@@ -1034,7 +1049,7 @@ void select_music(MENU *menu, WINDOW *menu_win) {
         "2. Sneaky Snitch",
         "3. Pixel Dreams",
         "4. Pixel Fight",
-        "5. Music Off ",
+        "5. Music Off",
         "6. Return",
         NULL,
     };
@@ -1141,6 +1156,7 @@ void select_music(MENU *menu, WINDOW *menu_win) {
                     Mix_HaltMusic();  // Stop current music
                     Mix_CloseAudio();
                     SDL_Quit();
+                    // play_music("game_of_thrones.mp3");
 
                 }
                 wattroff(sub_menu_win, COLOR_PAIR(2));

@@ -21,11 +21,11 @@
 #define MAX_LENGTH 100
 
 #define MAX_ROOMS 6
-#define MIN_ROOM_SIZE 5
-#define MAX_ROOM_SIZE 12
+#define MIN_ROOM_SIZE 4
+#define MAX_ROOM_SIZE 13
 // Define boundaries for the terminal
 #define MAX_COL COLS           // Number of columns in the terminal
-#define MAX_ROW LINES-6          // Number of rows in the terminal
+#define MAX_ROW LINES           // Number of rows in the terminal
 #define RESERVED_TOP 1         // Reserved rows at the top
 #define RESERVED_BOTTOM 5      // Reserved rows at the bottom
 #define PLAYABLE_TOP RESERVED_TOP
@@ -48,8 +48,6 @@ typedef struct {
     int type;
     int locked;
     int password;
-    int room_size_v;
-    int room_size_h;
     Pos doors[2];
     Pos pillar_seed;
     int traps_count;
@@ -66,7 +64,7 @@ typedef struct {
     int score;
     int gold;
     int count_games;
-    int experience;
+    int experience; //count of ended games
     bool guest;
     bool logged_in;
     bool resume_game_bool;
@@ -74,6 +72,7 @@ typedef struct {
     int game_difficulty;
     int player_color;
     int song;
+
 
 
     Pos player_pos;
@@ -96,6 +95,8 @@ typedef struct {
     time_t password_start_time;
 } Player;
 
-
+int rand_range(int min, int max) {
+    return min + rand() % (max - min + 1);
+}
 
 #endif //ESSENCIALS_H

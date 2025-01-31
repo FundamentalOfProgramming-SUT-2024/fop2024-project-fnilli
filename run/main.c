@@ -1,3 +1,5 @@
+#include <bits/local_lim.h>
+
 #include "essentials.h"
 #include "game_menu.h"
 #include "map.h"
@@ -6,17 +8,14 @@
 void start_ncurses();
 void start_colors();
 void start_game();
-void start_map(Room room[]);
+void start_map(Room room[],  char map[MAX_ROW][COLS]);
 void start_player_position(Room room[]);
 void handle_movement(int ch,  char map[MAX_ROW][COLS]);
 bool is_corridor(char map[MAX_ROW][COLS]);
 bool is_room(char map[MAX_ROW][COLS]);
 void draw_player();
 void start_music();
-void save_screen_to_array(char map[MAX_ROW][COLS]);
-void print_map_from_array(char map[MAX_ROW][COLS]) ;
-void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]);
-void load_map_from_file(const char *filename, char map[MAX_ROW][COLS]);
+
 
 
 int main() {
@@ -28,23 +27,18 @@ int main() {
     start_menu();
     curs_set(FALSE);
     Room room[MAX_ROOMS];
-    start_map(room);
     char map[MAX_ROW][COLS];
-    save_screen_to_array(map);
-    save_map_to_file("map.txt", map);
+    start_map(room, map);
     start_player_position(room);
 
     while (1) {
         //DRAW MAP
         print_map_from_array(map);
-        mvprintw(0, 0, "Health: 100 | Level: 1 | Press 'Q' to quit");
         draw_player();
 
         //MOVE PLAYER
         int ch = getch();
-        if (ch == 'q' || ch == 'Q') {
-            break;
-        }
+        if (ch == 'q' || ch == 'Q')   break;
         handle_movement(ch, map);
     }
 
@@ -81,10 +75,6 @@ void start_colors() {
 void start_game() {
     //show my name
     attron(A_BOLD |  COLOR_PAIR(3));
-    // char message[] = "ROGUE";
-    // mvprintw((LINES / 2)-1, (COLS - strlen(message)) / 2, "%s", message); // نمایش پیام در مرکز
-    // attroff(A_BOLD);
-    //
     char myname[] = "Fatemeh Nilforoushan";
     mvprintw((LINES/2)+5 , (COLS - strlen(myname) -3)/2 ,"%s", myname);
 
@@ -131,40 +121,75 @@ void start_music() {
         exit(0);
         return ;
     }
-    Mix_Music *bgMusic = Mix_LoadMUS("stranger_things.mp3");
-    if (!bgMusic) {
-        printf("Failed to load music! Mix Error: %s\n", Mix_GetError());
-        endwin();
-        exit(0);
-    }
-    Mix_PlayMusic(bgMusic, 3);
+    // play_music("stranger_things.mp3");
 
 }
-void start_map(Room room[]) {
-    clear();
-    generate_rooms(room);
 
-    // Draw all rooms and connect them
-    for (int i = 0; i < MAX_ROOMS; ++i) {
-        draw_room(&room[i], i);
+void start_map(Room room[], char map[MAX_ROW][COLS]) {
+    if ((player.guest || player.creat_game_bool) && !player.resume_game_bool) {//start a new game, its a guest or new player
+        // beginning of previous "start_map" function
+        clear();
+        generate_rooms(room);
+        // Draw all rooms and connect them
+        for (int i = 0; i < MAX_ROOMS; ++i) {
+            draw_room(&room[i], i);
+        }
+        connect_rooms(&room[0], &room[1]);
+        connect_rooms(&room[0], &room[2]);
+        connect_rooms(&room[1], &room[3]);
+        connect_rooms(&room[2], &room[3]);
+        connect_rooms(&room[2], &room[4]);
+        connect_rooms(&room[4], &room[5]);
+        connect_rooms(&room[3], &room[5]);
+
+        // for (int i=0; i < MAX_ROOMS-1; i++) {
+        //     connect_rooms(&room[i], &room[i+1]);
+        // }
+        // connect_rooms(&room[3], &room[5]);
+        refresh();
+        // draw bottom line of the page
+        char *bottom_line = "_ . ";
+        int pattern_length = 4;
+        for (int i = 0; i < COLS; i += pattern_length) {
+            mvprintw(LINES - 5, i, bottom_line);
+        }
+        // end of previous "start_map" function
+
+        save_screen_to_array(map);
+        save_map_to_file("map.txt", map);
+
+    }else if (player.resume_game_bool && !player.creat_game_bool && !player.guest) {//continue last game, it has logged in before.
+        load_map_from_file("map.txt", map);
+        detect_rooms(map, room);
+
     }
-    connect_rooms(&room[0], &room[1]);
-    connect_rooms(&room[0], &room[2]);
-    connect_rooms(&room[1], &room[3]);
-    connect_rooms(&room[2], &room[3]);
-    connect_rooms(&room[2], &room[4]);
-    connect_rooms(&room[4], &room[5]);
-    connect_rooms(&room[3], &room[5]);
-
-    // print bottom line of the page
-    const char *bottom_line = "_ . ";
-    int pattern_length = 4;
-    for (int i = 0; i < COLS; i += pattern_length) {
-        mvprintw(LINES - 6, i, bottom_line);
-    }
-
-    refresh();
 }
+
+// void start_map(Room room[]) {
+//     clear();
+//     generate_rooms(room);
+//     // Draw all rooms and connect them
+//     for (int i = 0; i < MAX_ROOMS; ++i) {
+//         draw_room(&room[i], i);
+//     }
+//     // connect_rooms(&room[0], &room[1]);
+//     // connect_rooms(&room[0], &room[2]);
+//     // connect_rooms(&room[1], &room[3]);
+//     // connect_rooms(&room[2], &room[3]);
+//     // connect_rooms(&room[2], &room[4]);
+//     // connect_rooms(&room[4], &room[5]);
+//     // connect_rooms(&room[3], &room[5]);
+//
+//     for (int i=0; i < MAX_ROOMS-1; i++) {
+//         connect_rooms(&room[i], &room[i+1]);
+//     }
+//     connect_rooms(&room[3], &room[5]);
+//
+//
+//
+//     refresh();
+// }
+
 void start_player_position(Room room[]) {
     int which_room = rand() % 6;
     // int x = rand() % (room[which_room].width + 1);
@@ -176,6 +201,63 @@ void start_player_position(Room room[]) {
     player.player_pos.x = 3 + room[which_room].x;
     player.player_pos.y = 3 + room[which_room].y;
 }
+void draw_player() {
+    //attron
+    switch (player.player_color) {
+        case 1: {
+            attron(COLOR_PAIR(1));  //Magenta
+            break;
+        }
+        case 3: {
+            attron(COLOR_PAIR(3));  //Red
+            break;
+        }
+        case 4: {
+            attron(COLOR_PAIR(4));  //Green
+            break;
+        }
+        case 5: {
+            attron(COLOR_PAIR(5)); // Blue
+            break;
+        }
+        case 7: {
+            attron(COLOR_PAIR(7)); //Yellow
+            break;
+        }
+        default:
+            attron(COLOR_PAIR(3));
+    }
+    noecho();
+    // mvaddwstr(player.y, player.x, L"🧑");
+    // mvaddwstr(player.y, player.x, L"웃");
+    mvaddch(player.player_pos.y, player.player_pos.x, '@');
+    //attroff
+    switch (player.player_color) {
+        case 1: {
+            attroff(COLOR_PAIR(1));  //Magenta
+            break;
+        }
+        case 3: {
+            attroff(COLOR_PAIR(3));  //Red
+            break;
+        }
+        case 4: {
+            attroff(COLOR_PAIR(4));  //Green
+            break;
+        }
+        case 5: {
+            attroff(COLOR_PAIR(5)); // Blue
+            break;
+        }
+        case 7: {
+            attroff(COLOR_PAIR(7)); //Yellow
+            break;
+        }
+        default:
+            attroff(COLOR_PAIR(3));
+    }
+}
+
 // void handle_movement(int ch, Pos *player, char map[LINES][COLS]){
 // int do_nothing = 0;
 //     if (player->y >= 0 && player->y <= LINES - 1 && player->x >= 0 && player->x <= COLS - 1) {
@@ -362,12 +444,11 @@ void handle_movement(int ch, char map[MAX_ROW][COLS]){
         else {
             mvprintw(0, 0, "Invalid Command");
             refresh();
-            sleep(0.5);
+            sleep(1);
         }
 
     }
 }
-
 bool is_corridor(char map[MAX_ROW][COLS]) {
     if (map[player.player_pos.y][player.player_pos.x] == '#' || map[player.player_pos.y][player.player_pos.x] == '+') {
         return true;
@@ -383,110 +464,9 @@ bool is_room(char map[MAX_ROW][COLS]) {
 
 }
 
-void draw_player() {
-    //attron
-    switch (player.player_color) {
-        case 1: {
-            attron(COLOR_PAIR(1));  //Magenta
-            break;
-        }
-        case 3: {
-            attron(COLOR_PAIR(3));  //Red
-            break;
-        }
-        case 4: {
-            attron(COLOR_PAIR(4));  //Green
-            break;
-        }
-        case 5: {
-            attron(COLOR_PAIR(5)); // Blue
-            break;
-        }
-        case 7: {
-            attron(COLOR_PAIR(7)); //Yellow
-            break;
-        }
-        default:
-            attron(COLOR_PAIR(3));
-    }
-    noecho();
-    // mvaddwstr(player.y, player.x, L"🧑");
-    // mvaddwstr(player.y, player.x, L"웃");
-    mvaddch(player.player_pos.y, player.player_pos.x, '@');
-    //attroff
-    switch (player.player_color) {
-        case 1: {
-            attroff(COLOR_PAIR(1));  //Magenta
-            break;
-        }
-        case 3: {
-            attroff(COLOR_PAIR(3));  //Red
-            break;
-        }
-        case 4: {
-            attroff(COLOR_PAIR(4));  //Green
-            break;
-        }
-        case 5: {
-            attroff(COLOR_PAIR(5)); // Blue
-            break;
-        }
-        case 7: {
-            attroff(COLOR_PAIR(7)); //Yellow
-            break;
-        }
-        default:
-            attroff(COLOR_PAIR(3));
-    }
-}
 
-void save_screen_to_array(char map[MAX_ROW][COLS]) {
-    for (int y = 0; y < MAX_ROW; ++y) {
-        for (int x = 0; x < COLS; ++x) {
-            // Get the character at the screen position and store it
-            map[y][x] = mvinch(y, x) & A_CHARTEXT;
-        }
-    }
-}
-void print_map_from_array(char map[MAX_ROW][COLS]) {
-    for (int y = 0; y < MAX_ROW; ++y) {
-        for (int x = 0; x < COLS; ++x) {
-            mvaddch(y, x, map[y][x]); // Print each character back to the screen
-        }
-    }
-}
-void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]) {
-    FILE *file = fopen(filename, "w"); // Open file in write mode
-    if (file == NULL) {
-        perror("Error opening file for saving");
-        return;
-    }
 
-    for (int y = 0; y < MAX_ROW; ++y) {
-        for (int x = 0; x < COLS; ++x) {
-            fputc(map[y][x], file); // Write each character
-        }
-        fputc('\n', file); // Add a newline at the end of each row
-    }
 
-    fclose(file); // Close the file
-}
-void load_map_from_file(const char *filename, char map[MAX_ROW][COLS]) {
-    FILE *file = fopen(filename, "r"); // Open file in read mode
-    if (file == NULL) {
-        perror("Error opening file for loading");
-        return;
-    }
 
-    for (int y = 0; y < MAX_ROW; ++y) {
-        for (int x = 0; x < COLS; ++x) {
-            int ch = fgetc(file); // Read each character
-            if (ch == EOF || ch == '\n') break;
-            map[y][x] = (char)ch;
-        }
-        // Skip any remaining characters on the line or newline
-        while (fgetc(file) != '\n' && !feof(file));
-    }
 
-    fclose(file); // Close the file
-}
+

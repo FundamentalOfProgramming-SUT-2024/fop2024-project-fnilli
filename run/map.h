@@ -14,11 +14,16 @@ void connect_rooms(Room *a, Room *b);
 void draw_room(Room *room, int room_index);
 void connect_rooms(Room *a, Room *b) ;
 void draw_corridor(int x1, int y1, int x2, int y2) ;
+//handling screen and map array
+void save_screen_to_array(char map[MAX_ROW][COLS]);
+void print_map_from_array(char map[MAX_ROW][COLS]) ;
+void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]);
+void load_map_from_file(const char *filename, char map[MAX_ROW][COLS]);
+void detect_rooms(char map[MAX_ROW][COLS], Room room[MAX_ROOMS]);
 
 
-int rand_range(int min, int max) {
-    return min + rand() % (max - min + 1);
-}
+
+
 
 void generate_rooms(Room room[] ) {
 
@@ -202,5 +207,114 @@ void draw_corridor(int x1, int y1, int x2, int y2) {
         }
     }
 }
+
+//handling screen and map array, keep printing after once generating map
+void save_screen_to_array(char map[MAX_ROW][COLS]) {
+    for (int y = 0; y < MAX_ROW; ++y) {
+        for (int x = 0; x < COLS; ++x) {
+            // Get the character at the screen position and store it
+            map[y][x] = mvinch(y, x) & A_CHARTEXT;
+        }
+    }
+}
+void print_map_from_array(char map[MAX_ROW][COLS]) {
+    for (int y = 1; y < MAX_ROW; ++y) {
+        for (int x = 0; x < COLS; ++x) {
+            mvaddch(y, x, map[y][x]); // Print each character back to the screen
+        }
+    }
+    // draw bottom line of the page
+    char *bottom_line = "_ . ";
+    int pattern_length = 4;
+    for (int i = 0; i < COLS; i += pattern_length) {
+        mvprintw(LINES - 5, i, bottom_line);
+    }
+}
+void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]) {
+    FILE *file = fopen(filename, "w"); // Open file in write mode
+    if (file == NULL) {
+        perror("Error opening file for saving");
+        return;
+    }
+
+    for (int y = 0; y < MAX_ROW; ++y) {
+        for (int x = 0; x < COLS; ++x) {
+            fputc(map[y][x], file); // Write each character
+        }
+        fputc('\n', file); // Add a newline at the end of each row
+    }
+
+    fclose(file); // Close the file
+}
+void load_map_from_file(const char *filename, char map[MAX_ROW][COLS]) {
+    FILE *file = fopen(filename, "r"); // Open file in read mode
+    if (file == NULL) {
+        perror("Error opening file for loading");
+        return;
+    }
+
+    for (int y = 0; y < MAX_ROW; ++y) {
+        for (int x = 0; x < COLS; ++x) {
+            int ch = fgetc(file); // Read each character
+            if (ch == EOF || ch == '\n') break;
+            map[y][x] = (char)ch;
+        }
+        // Skip any remaining characters on the line or newline
+        while (fgetc(file) != '\n' && !feof(file));
+    }
+
+    fclose(file); // Close the file
+}
+void detect_rooms(char map[MAX_ROW][COLS], Room room[MAX_ROOMS]) {
+    int room_count = 0;
+
+    for (int y = 1; y < MAX_ROW && room_count < MAX_ROOMS; ++y) {
+        for (int x = 0; x < COLS && room_count < MAX_ROOMS; ++x) {
+            // Check if we found a room's floor tile ('.')
+            if (map[y][x] == '.') {
+
+                // Check if this is a new room (not inside an existing one)
+                bool is_new_room = true;
+                for (int i = 0; i < room_count; i++) {
+                    if (x >= room[i].x && x < room[i].x + room[i].width &&
+                        y >= room[i].y && y < room[i].y + room[i].height) {
+                        is_new_room = false;
+                        break;
+                    }
+                }
+
+                if (is_new_room) {
+                    // Detect width (until we hit a wall '|')
+                    int width = 0;
+                    while (x + width < COLS && map[y][x + width] != '|') {
+                        width++;
+                    }
+
+                    // Detect height (until we hit a horizontal wall '_')
+                    int height = 0;
+                    while (y + height < MAX_ROW && map[y + height][x] != '_') {
+                        height++;
+                    }
+
+                    // Store room
+                    room[room_count].x = x;
+                    room[room_count].y = y;
+                    room[room_count].width = width;
+                    room[room_count].height = height;
+
+                    room_count++;
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
 
 #endif //MAP_H
