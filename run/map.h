@@ -3,28 +3,34 @@
 
 #include "essentials.h"
 
-
-
-
-
+//prototypes
 int rand_range(int min, int max);
-void generate_rooms(Room rooms[]);
+//first time generating
+void generate_rooms(Room rooms[MAX_ROOMS]);
 bool rooms_overlap(Room *a, Room *b);
-void connect_rooms(Room *a, Room *b);
 void draw_room(Room *room, int room_index);
 void connect_rooms(Room *a, Room *b) ;
 void draw_corridor(int x1, int y1, int x2, int y2) ;
+void draw_forward_stair(Room *room);
+void draw_backward_stair_player_pos(Room *room) ;
 //handling screen and map array
 void save_screen_to_array(char map[MAX_ROW][COLS]);
-void print_map_from_array(char map[MAX_ROW][COLS]) ;
+void print_map_from_array(char map[MAX_ROW][COLS], bool visibility[MAX_ROW][COLS]);
 void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]);
 void load_map_from_file(const char *filename, char map[MAX_ROW][COLS]);
 void detect_rooms(char map[MAX_ROW][COLS], Room room[MAX_ROOMS]);
+//other stuff
+void draw_window(int which_room, int which_side, Room room[MAX_ROOMS], char map[MAX_ROW][COLS]);
+void draw_obstacle();
 
 
 
+//functions
 
-
+int rand_range(int min, int max) {
+    return min + rand() % (max - min + 1);
+}
+//first time generating
 void generate_rooms(Room room[] ) {
 
     int region_width = MAX_COL / 2;
@@ -58,7 +64,6 @@ void generate_rooms(Room room[] ) {
         }
     }
 }
-
 bool rooms_overlap(Room *a, Room *b) {
     return !(a->x + a->width < b->x || b->x + b->width < a->x ||
              a->y + a->height < b->y || b->y + b->height < a->y);
@@ -81,26 +86,6 @@ void draw_room(Room *room, int room_index) {
         }
     }
 }
-// void draw_room(Room *room, int room_index) {
-//     // Draw the walls
-//     for (int x = room->x; x < room->x + room->width; ++x) {
-//         mvaddch(room->y, x, '_'); // Top wall
-//         mvaddch(room->y + room->height - 1, x, '_'); // Bottom wall
-//     }
-//     for (int y = room->y + 1; y < room->y + room->height; ++y) {
-//         mvaddch(y, room->x, '|'); // Left wall
-//         mvaddch(y, room->x + room->width - 1, '|'); // Right wall
-//     }
-//
-//     // Fill the floor
-//     for (int y = room->y + 1; y < room->y + room->height - 1; ++y) {
-//         for (int x = room->x + 1; x < room->x + room->width - 1; ++x) {
-//             mvaddch(y, x, '.');
-//         }
-//     }
-//
-// }
-
 void connect_rooms(Room *a, Room *b) {
 
     // get a cordination for each room's door
@@ -116,64 +101,6 @@ void connect_rooms(Room *a, Room *b) {
     // Draw a corridor between the centers
     draw_corridor(x1, y1, x2, y2);
 }
-
-
-// void drawww_corridor(int x1, int y1, int x2, int y2) {
-//
-//     int oncex=0, oncey=0;
-//     //draw horizontal part of the corridor
-//     while (x1 != x2) {
-//         if(x1 < x2){
-//             x1++;
-//         }
-//         else{
-//             x1--;
-//         }
-//
-//         if (mvinch(y1, x1) == '_' || mvinch(y1, x1) == '|') {
-//             mvprintw(y1, x1, "+");
-//             // if (!oncex) {
-//             //     mvprintw(y1, x1, "+");
-//             //     oncex = 1;
-//             // }
-//             // if (y1 > 0 && mvinch(y1 - 1, x1) == ' ') {
-//             //     mvaddch(y1 - 1, x1, '#'); //place corridor above
-//             // } else if (y1 < LINES - 1 && mvinch(y1 + 1, x1) == ' ') {
-//             //     mvaddch(y1 + 1, x1, '#'); //place corridor below
-//             // }
-//         }
-//         else if(mvinch(y1, x1)  == ' '){ //check if the cell is empty
-//             mvprintw(y1, x1, "#");
-//         }
-//
-//     }
-//
-//     // Draw vertical part of the corridor
-//     while(y1 != y2){
-//         if(y1 < y2){
-//             y1++;
-//         }
-//         else{
-//             y1--;
-//         }
-//
-//         if(mvinch(y1, x1) == '|' || mvinch(y1, x1) == '_'){
-//             if (!oncey) {
-//                 mvprintw(y1, x1, "+");
-//                 oncey = 1;
-//             }
-//             if (x2 > 0 && mvinch(y1, x2 - 1) == ' ') {
-//                 mvaddch(y1, x2 - 1, '#'); // Place corridor to the left
-//             } else if (x2 < COLS - 1 && mvinch(y1, x2 + 1) == ' ') {
-//                 mvaddch(y1, x2 + 1, '#'); // Place corridor to the right
-//             }
-//         }
-//         else if(mvinch(y1, x1) == ' '){  // Check if the cell is empty
-//             mvprintw(y1, x1, "#");
-//         }
-//     }
-// }
-
 void draw_corridor(int x1, int y1, int x2, int y2) {
 
     if (y1 < PLAYABLE_TOP || y1 >= PLAYABLE_BOTTOM || y2 < PLAYABLE_TOP || y2 >= PLAYABLE_BOTTOM) return;
@@ -207,6 +134,20 @@ void draw_corridor(int x1, int y1, int x2, int y2) {
         }
     }
 }
+void draw_forward_stair(Room *room) {
+    int y = room->y + rand_range(1,room->height - 2) ;
+    int x = room->x + rand_range(1, room->width - 2) ;
+    mvaddch(y, x, '<'); //forward stair
+
+}
+void draw_backward_stair_player_pos(Room *room) {
+    int y = room->y + rand_range(1,room->height - 2) ;
+    int x = room->x + rand_range(1, room->width - 2) ;
+    mvaddch(y, x, '>'); //backward stair
+    player.player_pos.y = y;
+    player.player_pos.x = x;
+
+}
 
 //handling screen and map array, keep printing after once generating map
 void save_screen_to_array(char map[MAX_ROW][COLS]) {
@@ -217,17 +158,33 @@ void save_screen_to_array(char map[MAX_ROW][COLS]) {
         }
     }
 }
-void print_map_from_array(char map[MAX_ROW][COLS]) {
+void print_map_from_array(char map[MAX_ROW][COLS], bool visibility[MAX_ROW][COLS]) {
+    init_pair(9, COLOR_WHITE,COLOR_WHITE);
+
     for (int y = 1; y < MAX_ROW; ++y) {
         for (int x = 0; x < COLS; ++x) {
-            mvaddch(y, x, map[y][x]); // Print each character back to the screen
+            if (visibility[y][x]) { // Show revealed areas
+                if (map[y][x] == '#') {
+                    attron(COLOR_PAIR(9));
+                    mvaddch(y, x, map[y][x]);
+                    attroff(COLOR_PAIR(9));
+
+                }else{
+                    mvaddch(y, x, map[y][x]); // Print each character back to the screen
+                }
+            } else {
+                mvaddch(y, x, ' '); // Hide unseen areas
+            }
+
         }
     }
+
+
     // draw bottom line of the page
     char *bottom_line = "_ . ";
     int pattern_length = 4;
     for (int i = 0; i < COLS; i += pattern_length) {
-        mvprintw(LINES - 5, i, bottom_line);
+        mvprintw(LINES - 4, i, bottom_line);
     }
 }
 void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]) {
@@ -309,10 +266,25 @@ void detect_rooms(char map[MAX_ROW][COLS], Room room[MAX_ROOMS]) {
     }
 }
 
+//other stuff
+void draw_window(int which_room, int which_side, Room room[MAX_ROOMS], char map[MAX_ROW][COLS]) {
+    int win_y = room[which_room].y, win_x=4;
+    if (which_side == 0) {  //top side
+        while (win_x < room[which_room].x + room[which_room].width) {
+            if (map[win_y][win_x] == '_')  break;
+            win_x++;
+        }
 
+    }else{ // (which_side == 1)  //bottom
+        win_y += room[which_room].height;
+        while (win_x < room[which_room].x + room[which_room].width) {
+            if (map[win_y][win_x] == '_')  break;
+            win_x++;
+        }
+    }
 
-
-
+    map[win_y][win_x] = '=';
+}
 
 
 

@@ -42,6 +42,8 @@ void start_menu() {
     player.guest = false;
     player.creat_game_bool = false;
     player.resume_game_bool = false;
+    player.floor = 1;
+    player.gold = 0;
 
     char *choices[] = {
         "1. Rogue Login",
@@ -493,7 +495,6 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
 
         delwin(form_win);
         clear();
-        refresh();
         // Clear and redisplay the menu
         set_menu_win(menu, menu_win);
         set_menu_mark(menu, " * ");
@@ -523,13 +524,22 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
         wgetch(form_win);
 
         delwin(form_win);
-
-        // Clear and redisplay the menu
         clear();
+        // Clear and redisplay the menu
+        set_menu_win(menu, menu_win);
+        set_menu_mark(menu, " * ");
+        // Print a border and title
+        box(menu_win, 0, 0);
+        print_in_middle(menu_win, 1, 0, 40, "Game Menu", COLOR_PAIR(1));
+        mvwaddch(menu_win, 2, 0, ACS_LTEE);
+        mvwhline(menu_win, 2, 1, ACS_HLINE, 40 - 2);
+        mvwaddch(menu_win, 2, 40 - 1, ACS_RTEE);
+
         refresh();
+        // Post the menu
         post_menu(menu);
         wrefresh(menu_win);
-
+        return;
 
 
 

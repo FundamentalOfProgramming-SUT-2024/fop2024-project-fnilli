@@ -27,7 +27,7 @@
 #define MAX_COL COLS           // Number of columns in the terminal
 #define MAX_ROW LINES           // Number of rows in the terminal
 #define RESERVED_TOP 1         // Reserved rows at the top
-#define RESERVED_BOTTOM 5      // Reserved rows at the bottom
+#define RESERVED_BOTTOM 4      // Reserved rows at the bottom
 #define PLAYABLE_TOP RESERVED_TOP
 #define PLAYABLE_BOTTOM (MAX_ROW - RESERVED_BOTTOM)
 
@@ -42,7 +42,7 @@ typedef struct {
     int x, y;      // Top-left corner
     int width;
     int height;
-    bool visitied;
+    bool visited;
 
 
     int type;
@@ -72,14 +72,15 @@ typedef struct {
     int game_difficulty;
     int player_color;
     int song;
-
-
+    int floor;
+    int stair_pos;
+    bool a_pressed;
+    int first_room_pos;
 
     Pos player_pos;
     Room rooms[6];
     int MAX_health;
     int health;
-    int floor_number;
     int hungriness;
     int players_ordinary_food;
     int players_mace;
@@ -95,8 +96,7 @@ typedef struct {
     time_t password_start_time;
 } Player;
 
-int rand_range(int min, int max) {
-    return min + rand() % (max - min + 1);
-}
+
+
 
 #endif //ESSENCIALS_H
