@@ -83,6 +83,7 @@ int main() {
 //initializing game
 void start_ncurses() {
     // setlocale(LC_ALL, "");
+    setlocale(LC_CTYPE, "");
     initscr();
     cbreak();
     noecho();
@@ -252,8 +253,11 @@ void draw_player() {
             attron(COLOR_PAIR(3));
     }
     noecho();
-    // mvaddwstr(player.y, player.x, L"🧑");
-    // mvaddwstr(player.y, player.x, L"웃");
+
+    // mvaddstr(player.player_pos.y, player.player_pos.x, L"\U0001F60D");
+    // mvprintw(player.player_pos.y, player.player_pos.x, "\U0001F60D");
+    // mvprintw(player.player_pos.y, player.player_pos.x, "웃");
+
     mvaddch(player.player_pos.y, player.player_pos.x, '@');
     attroff(A_BOLD);
     switch (player.player_color) {

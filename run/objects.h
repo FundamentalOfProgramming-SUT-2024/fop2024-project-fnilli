@@ -11,6 +11,8 @@ void place_dark_gold( Room room[MAX_ROOMS]);
 void get_dark_gold(char map[MAX_ROW][COLS]);
 
 
+void update_user_score(const char *filename, const char *username, int score);
+
 
 void place_gold( Room room[MAX_ROOMS]) {
   	int gold_count_per_floor = 0;
@@ -59,6 +61,7 @@ void get_gold(char map[MAX_ROW][COLS]){
 
     //add gold score
     player.gold += 5;
+	update_user_score("users.txt", player.username, 5);
 }
 
 void place_dark_gold( Room room[MAX_ROOMS]) {
@@ -99,6 +102,63 @@ void get_dark_gold(char map[MAX_ROW][COLS]){
 
 	//add gold score
 	player.gold += 10;
+	update_user_score("users.txt", player.username, 10);
+
+}
+
+
+void update_user_score(const char *filename, const char *username, int score) {
+	FILE *file = fopen(filename, "r");
+	if (!file) {
+		perror("Error opening file");
+		return;
+	}
+
+	char temp_filename[] = "temp_users.txt";
+	FILE *temp_file = fopen(temp_filename, "w");
+	if (!temp_file) {
+		perror("Error opening temp file");
+		fclose(file);
+		return;
+	}
+
+	char line[MAX_LINE];
+	int found = 0;  // Flag to check if user is found
+
+	while (fgets(line, sizeof(line), file)) {
+		char file_user[MAX_USERNAME], file_pass[MAX_USERNAME];
+		int file_score = 0;  // Default score if not present
+
+		// Check if line contains score (user:pass OR user:pass:score)
+		if (sscanf(line, "%[^:]:%[^:]:%d", file_user, file_pass, &file_score) == 3 ||
+			sscanf(line, "%[^:]:%s", file_user, file_pass) == 2) {
+
+			// If the user matches, update their score
+			if (strcmp(file_user, username) == 0) {
+				found = 1;
+				file_score += score;  // Add new score to existing score
+				fprintf(temp_file, "%s:%s:%d\n", file_user, file_pass, file_score);
+			} else {
+				fprintf(temp_file, "%s:%s:%d\n", file_user, file_pass, file_score);
+			}
+			} else {
+				// If the line is not properly formatted, just write it back unchanged
+				fprintf(temp_file, "%s", line);
+			}
+	}
+
+	fclose(file);
+	fclose(temp_file);
+
+	// Replace old file with updated temp file
+	remove(filename);
+	rename(temp_filename, filename);
+
+	if (!found) {
+		mvprintw(0,0,"User %s not found in %s", username, filename);
+	} else {
+		mvprintw(0,0,"User %s score updated successfully.", username);
+	}
 }
 
 

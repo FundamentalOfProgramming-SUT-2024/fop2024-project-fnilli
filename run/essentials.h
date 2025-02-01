@@ -2,10 +2,12 @@
 #define ESSENCIALS_H
 
 // #include <ncursesw/curses.h>
-// #include <locale.h>
+#include <locale.h>
 // #include <wchar.h>
-#include <ncurses.h>
-#include <menu.h>
+
+#include <ncursesw/ncurses.h>   // Use the wide-character ncurses
+#include <ncursesw/menu.h>      // Use the wide-character menu library
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -19,6 +21,8 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define MAX_LENGTH 100
+#define MAX_LINE 100
+#define MAX_USERNAME 50
 
 #define MAX_ROOMS 6
 #define MIN_ROOM_SIZE 4
