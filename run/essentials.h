@@ -45,15 +45,13 @@ typedef struct {
     bool visited;
 
 
-    int type;
+    int type;   //1: regular  2: spell  3:treasure  4: nightmare
     int locked;
     int password;
     Pos doors[2];
     Pos pillar_seed;
     int traps_count;
     Pos traps[10];
-    int gold;
-    int dark_gold;
     int ordinary_food;
 } Room;
 
@@ -69,13 +67,17 @@ typedef struct {
     bool logged_in;
     bool resume_game_bool;
     bool creat_game_bool;
-    int game_difficulty;
+    int game_difficulty;    //3: easy(3 gold each floor)   2: medim(2 gold each floor)    3: hard(1 gold each floor)
     int player_color;
     int song;
     int floor;
     int stair_pos;
     bool a_pressed;
+    bool map_revealed;
     int first_room_pos;
+
+
+
 
     Pos player_pos;
     Room rooms[6];

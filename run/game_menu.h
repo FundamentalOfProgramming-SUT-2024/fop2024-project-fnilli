@@ -38,12 +38,12 @@ void start_menu() {
     // clear();
     // refresh();
     player.logged_in = false;
-    player.game_difficulty = 2;
     player.guest = false;
     player.creat_game_bool = false;
     player.resume_game_bool = false;
     player.floor = 1;
-    player.gold = 0;
+    player.game_difficulty = 2;// default: medium
+
 
     char *choices[] = {
         "1. Rogue Login",
@@ -117,11 +117,14 @@ void start_menu() {
                     endwin();
                     exit(0);
 
-                } else if (strcmp(item_name(cur), "2. Create New Rogue") == 0) {
+                }
+                else if (strcmp(item_name(cur), "2. Create New Rogue") == 0) {
                     create_new_rogue(menu, menu_win);
-                } else if (strcmp(item_name(cur), "1. Rogue Login") == 0) {
+                }
+                else if (strcmp(item_name(cur), "1. Rogue Login") == 0) {
                     login_rogue(menu, menu_win);
-                } else if (strcmp(item_name(cur), "3. Before You Play") == 0) {
+                }
+                else if (strcmp(item_name(cur), "3. Before You Play") == 0) {
                     before_you_play(menu, menu_win);
                 }
 
@@ -130,27 +133,6 @@ void start_menu() {
 
         }
 
-        // if (player.logged_in == false) {
-        //     clear();
-        //     refresh();
-        //     set_menu_win(menu, menu_win);
-        //     set_menu_sub(menu, derwin(menu_win, win_height - 4, win_width - 2, 3, 1));
-        //
-        //     // Set menu mark
-        //     set_menu_mark(menu, " * ");
-        //
-        //     // Print a border and title
-        //     box(menu_win, 0, 0);
-        //     print_in_middle(menu_win, 1, 0, win_width, "Game Menu", COLOR_PAIR(1));
-        //     mvwaddch(menu_win, 2, 0, ACS_LTEE);
-        //     mvwhline(menu_win, 2, 1, ACS_HLINE, win_width - 2);
-        //     mvwaddch(menu_win, 2, win_width - 1, ACS_RTEE);
-        //
-        //     refresh();
-        //     // Post the menu
-        //     post_menu(menu);
-        //     wrefresh(menu_win);
-        // }
     }
     if (player.resume_game_bool || player.creat_game_bool){
         unpost_menu(menu);
@@ -495,6 +477,7 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
 
         delwin(form_win);
         clear();
+        refresh();
         // Clear and redisplay the menu
         set_menu_win(menu, menu_win);
         set_menu_mark(menu, " * ");
@@ -511,7 +494,7 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
         wrefresh(menu_win);
         return;
 
-    }
+    }else {
         mvwprintw(form_win, 9, 2, "                                             ");
         wattron(form_win, COLOR_PAIR(1));
         mvwprintw(form_win, 9, 3, "Invalid username or password!");
@@ -525,6 +508,7 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
 
         delwin(form_win);
         clear();
+        refresh();
         // Clear and redisplay the menu
         set_menu_win(menu, menu_win);
         set_menu_mark(menu, " * ");
@@ -534,13 +518,13 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
         mvwaddch(menu_win, 2, 0, ACS_LTEE);
         mvwhline(menu_win, 2, 1, ACS_HLINE, 40 - 2);
         mvwaddch(menu_win, 2, 40 - 1, ACS_RTEE);
-
         refresh();
         // Post the menu
         post_menu(menu);
         wrefresh(menu_win);
         return;
 
+    }
 
 
 }
@@ -692,7 +676,7 @@ void resume_game(MENU *menu, WINDOW *menu_win) {
         wgetch(menu_win);
         return;
     }
-    if (!player.guest && player.logged_in) {
+    if (player.logged_in) {
         unpost_menu(menu);
         free_menu(menu);
         delwin(menu_win);

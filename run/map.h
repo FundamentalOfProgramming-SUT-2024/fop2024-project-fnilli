@@ -15,10 +15,10 @@ void draw_forward_stair(Room *room);
 void draw_backward_stair_player_pos(Room *room) ;
 //handling screen and map array
 void save_screen_to_array(char map[MAX_ROW][COLS]);
-void print_map_from_array(char map[MAX_ROW][COLS], bool visibility[MAX_ROW][COLS]);
 void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]);
 void load_map_from_file(const char *filename, char map[MAX_ROW][COLS]);
 void detect_rooms(char map[MAX_ROW][COLS], Room room[MAX_ROOMS]);
+
 //other stuff
 void draw_window(int which_room, int which_side, Room room[MAX_ROOMS], char map[MAX_ROW][COLS]);
 void draw_obstacle();
@@ -73,7 +73,7 @@ void draw_room(Room *room, int room_index) {
 
     for (int x = room->x; x < room->x + room->width; ++x) {
         if (room->y >= PLAYABLE_TOP) mvaddch(room->y, x, '_'); // Top wall
-        if (room->y + room->height - 1 < PLAYABLE_BOTTOM) mvaddch(room->y + room->height - 1, x, '_'); // Bottom wall
+        if (room->y + room->height - 1 < PLAYABLE_BOTTOM) mvaddch(room->y + room->height - 1, x, '-'); // Bottom wall
     }
     for (int y = room->y + 1; y < room->y + room->height - 1; ++y) {
         if (room->x >= 0) mvaddch(y, room->x, '|'); // Left wall
@@ -89,14 +89,11 @@ void draw_room(Room *room, int room_index) {
 void connect_rooms(Room *a, Room *b) {
 
     // get a cordination for each room's door
-    // int x1 = a->x + (rand() % a->width) ;
-    // int y1 = a->y + (rand() % a->height);
-    // int x2 = b->x + (rand() % b->width) ;
-    // int y2 = b->y + (rand() % b->height);
+
     int x1 = a->x + rand_range(1, a->width - 2);
     int y1 = a->y + rand_range(1, a->height - 2);
-    int x2 = b->x + rand_range(1, b->width - 2);
-    int y2 = b->y + rand_range(1, b->height - 2);
+    int x2 = b->x + rand_range(1, b->width - 2 );
+    int y2 = b->y + rand_range(1, b->height - 2 );
 
     // Draw a corridor between the centers
     draw_corridor(x1, y1, x2, y2);
@@ -110,7 +107,7 @@ void draw_corridor(int x1, int y1, int x2, int y2) {
     for (int x = start_x; x <= end_x; ++x) {
         // Check if the current position is a room wall (| or _)
         char ch = mvwinch(stdscr, y1, x);
-        if (ch == '|' || ch == '_') {
+        if (ch == '|' || ch == '_' || ch == '-') {
             // Place a door (+) where the corridor connects to the room wall
             mvaddch(y1, x, '+');
         } else if (ch == ' ' || ch == '#') {
@@ -125,7 +122,7 @@ void draw_corridor(int x1, int y1, int x2, int y2) {
     for (int y = start_y; y <= end_y; ++y) {
         // Check if the current position is a room wall (| or _)
         char ch = mvwinch(stdscr, y, x2);
-        if (ch == '|' || ch == '_') {
+        if (ch == '|' || ch == '_'|| ch == '-') {
             // Place a door (+) where the corridor connects to the room wall
             mvaddch(y, x2, '+');
         } else if (ch == ' ' || ch == '#') {
@@ -158,35 +155,8 @@ void save_screen_to_array(char map[MAX_ROW][COLS]) {
         }
     }
 }
-void print_map_from_array(char map[MAX_ROW][COLS], bool visibility[MAX_ROW][COLS]) {
-    init_pair(9, COLOR_WHITE,COLOR_WHITE);
-
-    for (int y = 1; y < MAX_ROW; ++y) {
-        for (int x = 0; x < COLS; ++x) {
-            if (visibility[y][x]) { // Show revealed areas
-                if (map[y][x] == '#') {
-                    attron(COLOR_PAIR(9));
-                    mvaddch(y, x, map[y][x]);
-                    attroff(COLOR_PAIR(9));
-
-                }else{
-                    mvaddch(y, x, map[y][x]); // Print each character back to the screen
-                }
-            } else {
-                mvaddch(y, x, ' '); // Hide unseen areas
-            }
-
-        }
-    }
 
 
-    // draw bottom line of the page
-    char *bottom_line = "_ . ";
-    int pattern_length = 4;
-    for (int i = 0; i < COLS; i += pattern_length) {
-        mvprintw(LINES - 4, i, bottom_line);
-    }
-}
 void save_map_to_file(const char *filename, char map[MAX_ROW][COLS]) {
     FILE *file = fopen(filename, "w"); // Open file in write mode
     if (file == NULL) {
@@ -214,50 +184,53 @@ void load_map_from_file(const char *filename, char map[MAX_ROW][COLS]) {
         for (int x = 0; x < COLS; ++x) {
             int ch = fgetc(file); // Read each character
             if (ch == EOF || ch == '\n') break;
-            map[y][x] = (char)ch;
+            map[y][x] = ch;
         }
         // Skip any remaining characters on the line or newline
         while (fgetc(file) != '\n' && !feof(file));
     }
 
     fclose(file); // Close the file
+
+
 }
 void detect_rooms(char map[MAX_ROW][COLS], Room room[MAX_ROOMS]) {
     int room_count = 0;
 
-    for (int y = 1; y < MAX_ROW && room_count < MAX_ROOMS; ++y) {
-        for (int x = 0; x < COLS && room_count < MAX_ROOMS; ++x) {
+    for (int y = 1; y < MAX_ROW - 1 && room_count < MAX_ROOMS; ++y) {
+        for (int x = 1; x < COLS - 1 && room_count < MAX_ROOMS; ++x) {
             // Check if we found a room's floor tile ('.')
             if (map[y][x] == '.') {
-
-                // Check if this is a new room (not inside an existing one)
                 bool is_new_room = true;
+
+                // Check if this floor is already part of a detected room
                 for (int i = 0; i < room_count; i++) {
                     if (x >= room[i].x && x < room[i].x + room[i].width &&
                         y >= room[i].y && y < room[i].y + room[i].height) {
                         is_new_room = false;
                         break;
-                    }
+                        }
                 }
 
                 if (is_new_room) {
-                    // Detect width (until we hit a wall '|')
+                    // **Find Width:** Look for walls (`'|'`)
                     int width = 0;
                     while (x + width < COLS && map[y][x + width] != '|') {
                         width++;
                     }
 
-                    // Detect height (until we hit a horizontal wall '_')
+                    // **Find Height:** Stop at horizontal walls (`'_'` for top, `'-'` for bottom)
                     int height = 0;
-                    while (y + height < MAX_ROW && map[y + height][x] != '_') {
+                    while (y + height < MAX_ROW &&
+                           map[y + height][x] != '_' && map[y + height][x] != '-') {
                         height++;
-                    }
+                           }
 
                     // Store room
-                    room[room_count].x = x;
-                    room[room_count].y = y;
-                    room[room_count].width = width;
-                    room[room_count].height = height;
+                    room[room_count].x = x-1;
+                    room[room_count].y = y-1;
+                    room[room_count].width = width+2;
+                    room[room_count].height = height+2;
 
                     room_count++;
                 }
@@ -266,19 +239,22 @@ void detect_rooms(char map[MAX_ROW][COLS], Room room[MAX_ROOMS]) {
     }
 }
 
+
+
+
 //other stuff
 void draw_window(int which_room, int which_side, Room room[MAX_ROOMS], char map[MAX_ROW][COLS]) {
     int win_y = room[which_room].y, win_x=4;
     if (which_side == 0) {  //top side
         while (win_x < room[which_room].x + room[which_room].width) {
-            if (map[win_y][win_x] == '_')  break;
+            if (map[win_y][win_x] == '_' || map[win_y][win_x] == '-' )  break;
             win_x++;
         }
 
     }else{ // (which_side == 1)  //bottom
         win_y += room[which_room].height;
         while (win_x < room[which_room].x + room[which_room].width) {
-            if (map[win_y][win_x] == '_')  break;
+            if (map[win_y][win_x] == '_' || map[win_y][win_x] == '-')  break;
             win_x++;
         }
     }
