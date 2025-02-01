@@ -23,6 +23,14 @@
 #define MAX_LENGTH 100
 #define MAX_LINE 100
 #define MAX_USERNAME 50
+#define MAX_USERS 100
+#define MAX_NAME_LEN 30
+#define DISPLAY_ROWS 11  // Number of visible rows in the scoreboard
+
+#define MAX_PLAYERS 100
+#define MAX_LINE_LENGTH 256
+
+
 
 #define MAX_ROOMS 6
 #define MIN_ROOM_SIZE 4
@@ -63,8 +71,10 @@ typedef struct {
     char username[50];
     char password[50];
     char email[50];
+
     int score;
     int gold;
+
     int count_games;
     int experience; //count of ended games
     bool guest;
