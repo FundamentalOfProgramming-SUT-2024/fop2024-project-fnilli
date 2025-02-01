@@ -25,7 +25,7 @@
 #define MAX_USERNAME 50
 #define MAX_USERS 100
 #define MAX_NAME_LEN 30
-#define DISPLAY_ROWS 11  // Number of visible rows in the scoreboard
+#define DISPLAY_ROWS 10  // Number of visible rows in the scoreboard
 
 #define MAX_PLAYERS 100
 #define MAX_LINE_LENGTH 256

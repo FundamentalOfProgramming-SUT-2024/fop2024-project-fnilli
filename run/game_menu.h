@@ -7,7 +7,6 @@
 
 Player player;
 int difficulty_level = 2; //default: medium
-
 //prototypes
 void start_menu();
 void print_in_middle(WINDOW *win, int starty, int startx, int width, char *string, chtype color);
@@ -32,7 +31,7 @@ void select_music(MENU *menu, WINDOW *menu_win);
 void play_music(const char *filename) ;
 void scoreboard(MENU *menu, WINDOW *menu_win) ;
 void show_leaderboard(const char *filename) ;
-
+void redraw_menu(MENU *sub_menu, WINDOW *sub_menu_win, char *name);
 
 void start_menu() {
     // clear();
@@ -97,7 +96,6 @@ void start_menu() {
 
     // Menu interaction loop
     while ((c = wgetch(menu_win)) != 'q' ) {
-        if (player.resume_game_bool || player.creat_game_bool) break;
         switch (c) {
             case KEY_DOWN:
                 menu_driver(menu, REQ_DOWN_ITEM);
@@ -130,8 +128,9 @@ void start_menu() {
 
             }
                 break;
-
         }
+        if (player.resume_game_bool || player.creat_game_bool) break;
+
 
     }
     if (player.resume_game_bool || player.creat_game_bool){
@@ -139,7 +138,8 @@ void start_menu() {
         free_menu(menu);
         for (i = 0; i < n_choices; ++i)
             free_item(items[i]);
-
+        clear();
+        refresh();
     }
 }
 
@@ -269,6 +269,7 @@ void create_new_rogue(MENU *menu, WINDOW *menu_win) {
         strcpy(player.password, password);
         strcpy(player.email, email);
         player.logged_in = true;
+
 
 
     }
@@ -403,6 +404,17 @@ void register_user(const char *filename, const char *username, const char *passw
 }
 
 
+void redraw_menu(MENU *sub_menu, WINDOW *sub_menu_win, char *name) {
+    clear();
+    refresh();
+    box(sub_menu_win, 0, 0);
+    print_in_middle(sub_menu_win, 1, 0, 40, name, COLOR_PAIR(1));
+    mvwaddch(sub_menu_win, 2, 0, ACS_LTEE);
+    mvwhline(sub_menu_win, 2, 1, ACS_HLINE, 38);
+    mvwaddch(sub_menu_win, 2, 39, ACS_RTEE);
+    post_menu(sub_menu);
+    wrefresh(sub_menu_win);
+}
 // "Rogue Login" menu
 void login_rogue(MENU *menu, WINDOW *menu_win) {
     clear();
@@ -463,9 +475,12 @@ void login_rogue(MENU *menu, WINDOW *menu_win) {
     // Verify username and password
     const char *filename = "users.txt";
     if (validate_credentials(filename, username, password)) {
+        //stored player's data in validate function
         strcpy(player.username, username);
         strcpy(player.password, password);
         player.logged_in = true;
+        // strcpy(user_for_board, username);
+
 
         mvwprintw(form_win, 9, 2, "                                            ");
         wattron(form_win, COLOR_PAIR(2));
@@ -538,12 +553,22 @@ bool validate_credentials(const char *filename, const char *username, const char
     char line[100];
     while (fgets(line, sizeof(line), file)) {
         char stored_username[30], stored_password[30];
-        sscanf(line, "%[^:]:%s", stored_username, stored_password);
+        int score, gold, game_count, experience;
+        sscanf(line, "%[^:]:%[^:]:%d:%d:%d:%d", stored_username, stored_password, &score, &gold, &game_count, &experience);
         if (strcmp(stored_username, username) == 0 && strcmp(stored_password, password) == 0) {
+            strcpy(player.username, username);
+            strcpy(player.password, password);
+            player.score = score;
+            player.gold = gold;
+            player.count_games = game_count;
+            player.experience = experience;
+
             fclose(file);
             return true;
         }
     }
+
+
 
     fclose(file);
     return false;
@@ -637,19 +662,13 @@ void before_you_play(MENU *menu, WINDOW *menu_win) {
                 } else if (strcmp(name, "3. Score Board") == 0) {
                     show_leaderboard("users.txt");
                     // Re-draw the menu after returning from the leaderboard
-                    clear();
-                    refresh();
-                    box(sub_menu_win, 0, 0);
-                    print_in_middle(sub_menu_win, 1, 0, 40, "Before You Play", COLOR_PAIR(1));
-                    mvwaddch(sub_menu_win, 2, 0, ACS_LTEE);
-                    mvwhline(sub_menu_win, 2, 1, ACS_HLINE, 38);
-                    mvwaddch(sub_menu_win, 2, 39, ACS_RTEE);
-                    post_menu(sub_menu);
-                    wrefresh(sub_menu_win);
+                    redraw_menu(sub_menu, sub_menu_win, "Before You Play");
 
 
                 } else if (strcmp(name, "4. Setting") == 0) {
                     game_setting(sub_menu, sub_menu_win);
+                    redraw_menu(sub_menu, sub_menu_win, "Before You Play");
+
                 }
                 wclrtoeol(sub_menu_win);
                 wrefresh(sub_menu_win);
@@ -665,7 +684,7 @@ void new_game(MENU *menu, WINDOW *menu_win) {
         delwin(menu_win);
         clear();
         refresh();
-        mvwprintw(menu_win, 9, 3, "DONE");
+        // mvwprintw(menu_win, 9, 3, "DONE");
         player.creat_game_bool = true;
         return;
     }
@@ -693,7 +712,7 @@ void resume_game(MENU *menu, WINDOW *menu_win) {
         delwin(menu_win);
         clear();
         refresh();
-        mvwprintw(menu_win, 9, 3, "Let's Go");
+        // mvwprintw(menu_win, 9, 3, "Let's Go");
         player.resume_game_bool = true;
         return;
     }
@@ -758,37 +777,10 @@ void game_setting(MENU *menu, WINDOW *menu_win) {
                 const char *name = item_name(cur);
 
                 if (strcmp(name, "4. Back") == 0) {
-                    // Cleanup
-                    unpost_menu(setting_menu);
-                    free_menu(setting_menu);
-                    for (int i = 0; i < n_setting_choices; ++i)
-                        free_item(setting_items[i]);
                     delwin(setting_menu_win);
-
-                    // Return to main menu
                     clear();
                     refresh();
-                    // set_menu_win(menu, menu_win);
-                    // set_menu_sub(menu, derwin(menu_win, 8, 38, 3, 1));
-                    // set_menu_mark(menu, " > ");
-
-                    // Print a border and title
-                    box(menu_win, 0, 0);
-                    print_in_middle(menu_win, 1, 0, 40, "Before You Play", COLOR_PAIR(1));
-                    mvwaddch(menu_win, 2, 0, ACS_LTEE);
-                    mvwhline(menu_win, 2, 1, ACS_HLINE, 38);
-                    mvwaddch(menu_win, 2, 39, ACS_RTEE);
-
-                    // Post the menu
-                    post_menu(menu);
-                    wrefresh(menu_win);
                     return;
-
-                    // post_menu(menu);
-                    // wrefresh(menu_win);
-                    // return;
-                    // before_you_play(menu, menu_win);
-
                 }
                 else if (strcmp(name,"1. Game Difficulty") == 0) {
                     game_difficulty(setting_menu, setting_menu_win);
@@ -1196,7 +1188,6 @@ void show_leaderboard(const char *filename) {
     int count = 0;
     char line[100];
 
-
     // Read each line of the file
     while (fgets(line, sizeof(line), file) && count < MAX_USERS) {
         char *username = strtok(line, ":");
@@ -1234,7 +1225,7 @@ void show_leaderboard(const char *filename) {
     }
 
     // Create a centered window for the scoreboard
-    int win_width = 55, win_height = DISPLAY_ROWS + 20;  // Extra space for headers & footer
+    int win_width = 55, win_height = DISPLAY_ROWS + 15;  // Extra space for headers & footer
     int startx = (COLS - win_width) / 2;
     int starty = (LINES - win_height) / 2;
     WINDOW *score_win = newwin(win_height, win_width, starty, startx);
@@ -1249,9 +1240,10 @@ void show_leaderboard(const char *filename) {
     mvwhline(score_win, 2, 1, ACS_HLINE, win_width - 2);
     mvwaddch(score_win, 2, win_width - 1, ACS_RTEE);
 
-    int start_index = 1;  // For scrolling
+    int start_index = 0;  // For scrolling
     int selected = 0;
     int ch;
+
 
     while (1) {
         // Clear the scoreboard area before printing
@@ -1260,19 +1252,40 @@ void show_leaderboard(const char *filename) {
         }
 
         //Display scoarboard header
-        mvwprintw(score_win , 3 , 2 , "Rank | Username | Score | Gold | Games | Experience");
+        wattron(score_win, COLOR_PAIR(2));
+        mvwprintw(score_win , 3 , 2 , "# |   Username        | Score | Gold | Games | Exp");
+        wattroff(score_win, COLOR_PAIR(2));
+
         // Display leaderboard inside the window (with scrolling)
         for (int i = 0; i < DISPLAY_ROWS && (start_index + i) < count; i++) {
             int idx = start_index + i;
-            if (idx == selected)
-                wattron(score_win, A_REVERSE);
-            mvwprintw(score_win, 5 + i, 2, "%-18s %4d %4d %4d %4d",
+            if (idx == selected)    wattron(score_win, A_REVERSE);
+            mvprintw(0,0, "%s", player.username);
+            if (players[idx].username == player.username)   wattron(score_win,  A_BOLD| A_BLINK| COLOR_PAIR(1));
+            if (idx == 0){
+                wattron(score_win, COLOR_PAIR(8)); //gold
+                mvwprintw(score_win, 5 + i, 2, "%2d.  Goat> %-12s %4d    %4d   %4d    %4d", idx+1,
                 players[idx].username, players[idx].score, players[idx].gold, players[idx].count_games, players[idx].experience);
-            wattroff(score_win, A_REVERSE);
+            }
+            else if (idx == 1) {
+                wattron(score_win, COLOR_PAIR(12)); //silver
+                mvwprintw(score_win, 5 + i, 2, "%2d.  Legend> %-10s %4d    %4d   %4d    %4d", idx+1,
+                players[idx].username, players[idx].score, players[idx].gold, players[idx].count_games, players[idx].experience);
+            }
+            else if (idx == 2) {
+                wattron(score_win, COLOR_PAIR(13)); //bronze
+                mvwprintw(score_win, 5 + i, 2, "%2d.  Ace> %-13s %4d    %4d   %4d    %4d", idx+1,
+players[idx].username, players[idx].score, players[idx].gold, players[idx].count_games, players[idx].experience);
+            }
+            else mvwprintw(score_win, 5 + i, 2, "%2d.  %-18s %4d    %4d   %4d    %4d", idx+1,
+                players[idx].username, players[idx].score, players[idx].gold, players[idx].count_games, players[idx].experience);
+
+            wattroff(score_win, A_REVERSE | COLOR_PAIR(8) |COLOR_PAIR(12)|COLOR_PAIR(13) | A_BOLD |A_BLINK);
         }
 
         // Footer instructions
         wattron(score_win, COLOR_PAIR(2));
+        mvwprintw(score_win, win_height - 4, 2, "%s", player.username);
         mvwprintw(score_win, win_height - 4, 2, "[UP/DOWN] Scroll");
         mvwprintw(score_win, win_height - 3, 2, "[ENTER/Q] Back");
         wattroff(score_win, COLOR_PAIR(2));

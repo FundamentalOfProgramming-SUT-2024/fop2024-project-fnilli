@@ -57,13 +57,15 @@ int main() {
     refresh();
     player.a_pressed = false;
     player.map_revealed = false;
-
+    if (player.guest)         mvprintw(0,0,"Welcome Guest!");
+    else                    mvprintw(0,0,"Welcome %s!", player.username);
 
     while (1) {
         //DRAW MAP
         print_map_from_array(map, visibility);
         draw_player();
         bottom_massage();
+
         refresh();
         //MOVE PLAYER
         int ch = getch();
@@ -112,6 +114,12 @@ void start_colors() {
     int pink = 11;
     init_color(pink, 980, 922, 937);
     init_pair(11, pink, royal_blue);
+    int silver = 12;
+    init_color(silver, 768, 768, 768);
+    init_pair(12, silver, COLOR_BLACK);
+    int bronze = 13;
+    init_color(bronze, 820,508,200);
+    init_pair(13, bronze, COLOR_BLACK);
 }
 void start_window() {
     //show my name
@@ -143,7 +151,7 @@ void start_window() {
 
     attroff( A_BOLD | COLOR_PAIR(1));
     refresh();
-    sleep(1);
+    // sleep(1);
     clear();
     refresh();
 
@@ -302,7 +310,7 @@ void clear_top_massage() {
 void on_stair(int ch, char map[MAX_ROW][COLS], Room room[MAX_ROOMS], bool visibility[MAX_ROW][MAX_COL]) {
         if (ch == 'a' || ch == 'A') { // Detect 'A' key
             player.a_pressed = true;         // Set flag when 'A' is detected
-        } else if (player.a_pressed && ch == KEY_UP) {
+        } else if (player.a_pressed && ch == KEY_LEFT) {
             player.a_pressed = false; // Reset flag
             //make next floor
             next_floor(room , map, visibility);
@@ -348,7 +356,7 @@ void next_floor(Room room[MAX_ROOMS], char map[MAX_ROW][COLS], bool visibility[M
 
     save_screen_to_array(map);
     save_map_to_file("map.txt", map);
-
+    mvprintw(0,0, "Welcome to new floor!");
 
 }
 //movement
@@ -449,7 +457,7 @@ void handle_movement(int ch, char map[MAX_ROW][COLS]){
             sleep(0.5);
         }
 
-    if (next_move == '<')      mvprintw(0,0,"It's a stair to next floor! Press A + Key_Up to go to next floor.");
+    if (next_move == '<')      mvprintw(0,0,"It's a stair to next floor! Press A + Key_Left to go to next floor.");
     if (next_move == '>')      mvprintw(0,0,"Stairs to last floor");
     if (next_move == '$')      mvprintw(0,0,"You found 5 gold coins! Your fortune grows!");
     if (next_move == '"')      mvprintw(0,0,"You found a DARK gold! 10 coins added to your gold.");
@@ -535,8 +543,6 @@ void check_visibility(Room room[MAX_ROOMS], bool visibility[MAX_ROW][MAX_COL],ch
         reveal_corridor(ch, visibility, map);
     }
 }
-
-
 
 
 

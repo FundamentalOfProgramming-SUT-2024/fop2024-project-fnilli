@@ -10,6 +10,11 @@ void get_gold(char map[MAX_ROW][COLS]);
 void place_dark_gold( Room room[MAX_ROOMS]);
 void get_dark_gold(char map[MAX_ROW][COLS]);
 
+void place_trap( Room room[MAX_ROOMS]);
+
+void place_food( Room room[MAX_ROOMS]);
+
+
 
 void update_user_score(const char *filename, const char *username, int score);
 
