@@ -4,6 +4,9 @@
 #include "essentials.h"
 #include "game_menu.h"
 #include "map.h"
+Monster demon;
+
+
 void init_demon(Monster *demon);
 void place_monster(char map[MAX_ROW][COLS], Room room[MAX_ROOMS], Monster *monster);
 bool is_in_room(Room *room, int x, int y );
@@ -97,7 +100,7 @@ void monster_attack( Monster *monster) {
         (abs(player.player_pos.y - monster->pos.y) == 1 && player.player_pos.x == monster->pos.x)) {
         // Decrease player health by 5
         player.health -= monster->attack;
-        mvprintw(0, 0, "monster heat you! Watch yourself!", player.health);
+        mvprintw(0, 0, "monster heat you! Watch yourself!");
         }
 }
 void monster_take_damage(Monster *monster, int damage) {
@@ -184,6 +187,37 @@ void lost() {
     mvwhline(lost_win, 2, 1, ACS_HLINE, win_width - 2);
     mvwaddch(lost_win, 2, win_width - 1, ACS_RTEE);
 
+
+    // // Adjusting the ASCII Art alignment properly
+    // int art_x = (win_width - 28) / 2; // Center ASCII art
+    // mvwprintw(lost_win, 4, art_x,  "⠀⠀⢀⣠⣴⣶⠾⠿⣯⣭⣿⣛⡒⠶⢤⣄⡀⠀⠀⠀");
+    // mvwprintw(lost_win, 5, art_x,  "⢠⡾⠋⠉⠀⠀⠀⠀⠀⠀⠈⠉⠙⠻⣾⣿⣿⣷⣦⡀");
+    // mvwprintw(lost_win, 6, art_x,  "⢿⡈⠂⢀⣀⣀⠀⢀⠀⠀⢀⣀⣀⠀⠀⠙⣿⣯⡽⣷");
+    // mvwprintw(lost_win, 7, art_x,  "⠸⡇⠀⡍⠀⢈⡇⠀⡏⠁⢸⠀⠈⣷⠀⢀⡾⣽⣿⠃");
+    // mvwprintw(lost_win, 8, art_x,  "⠀⣿⠀⢣⠶⣞⠁⠀⡇⠀⢸⣤⠴⠋⡀⣾⣿⣿⠃⠀");
+    // mvwprintw(lost_win, 9, art_x,  "⠀⢹⡄⠘⡄⠘⣧⢀⣇⡀⢸⡇⠀⠀⢸⢿⣿⠏⠀⠀");
+    // mvwprintw(lost_win, 10, art_x, "⠀⠸⣇⠀⠁⢀⣀⣀⣉⣁⣈⠀⠀⠀⣿⣽⡿⠀⠀⠀");
+    // mvwprintw(lost_win, 11, art_x, "⠀⠀⣿⠀⠀⠀⠤⠤⠤⠤⠀⠀⠀⢸⣿⣿⡇⠀⠀⠀");
+    // mvwprintw(lost_win, 12, art_x, "⠀⢀⣹⣀⣂⣀⣈⣀⣀⣒⣂⡀⠀⣸⣸⡿⢳⡀⠀⠀");
+    // mvwprintw(lost_win, 13, art_x, "⠀⡎⠚⠒⠂⣠⣤⣬⠭⠭⠭⠭⠭⣵⣚⡿⢻⡆⠀");
+    // mvwprintw(lost_win, 14, art_x, "⠸⠤⠴⠶⣶⣶⣀⣀⣐⣂⣀⣈⣁⣸⠿⠛⠉⠀⠀");
+
+    // Display Exit Message
+    wattron(lost_win, COLOR_PAIR(2));
+    mvwprintw(lost_win, win_height - 3, (win_width - 30) / 2, "Press 'z' to return to menu");
+    wattroff(lost_win, COLOR_PAIR(2));
+
+    while (1) {
+
+        wrefresh(lost_win); // Refresh the window to show the changes
+        int ch = getch();
+        if (ch == 'z' ) break;
+    }
+
+    start_menu();
+}
+
+void won() {
 
 }
 

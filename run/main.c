@@ -59,11 +59,9 @@ int main() {
     start_player_position(room);
 
     //place stuff
-    Monster demon;
     init_demon(&demon);
     place_monster(map, room, &demon);
 
-    save_map_to_file("map.txt", map);
 
     reveal_room(&room[player.first_room_pos], visibility );
     // refresh();
@@ -296,6 +294,7 @@ void start_map(Room room[MAX_ROOMS], char map[MAX_ROW][COLS]) {
         save_screen_to_array(map);
         save_map_to_file("map.txt", map);
 
+
     }
     else if (player.resume_game_bool && !player.creat_game_bool && !player.guest) {//continue last game, it has logged in before.
         clear();
@@ -400,10 +399,13 @@ void next_floor(Room room[MAX_ROOMS], char map[MAX_ROW][COLS], bool visibility[M
     }
 
 
-
     save_screen_to_array(map);
     save_map_to_file("map.txt", map);
     mvprintw(0,0, "Welcome to new floor!");
+
+
+    init_demon(&demon);
+    place_monster(map, room, &demon);
 
 }
 //movement
@@ -606,7 +608,7 @@ void print_attron(int item) {
         case '$':   attron(A_BOLD | COLOR_PAIR(8)); break; //gold
         case '"':   attron(A_BOLD | COLOR_PAIR(10)); break; //dark gold
         case '&':   attron(A_BOLD | COLOR_PAIR(4)); break; //food
-        case 'D':   attron(A_BOLD | COLOR_PAIR(7)); break; //demon monster
+        case 'D':   attron(A_BOLD | COLOR_PAIR(5)); break; //demon monster
     }
 }
 void print_map_from_array(char map[MAX_ROW][COLS], bool visibility[MAX_ROW][COLS]) {

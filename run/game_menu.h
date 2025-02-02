@@ -52,6 +52,8 @@ void init_player() {
 
 }
 void start_menu() {
+    clear();
+    refresh();
     char *choices[] = {
         "1. Rogue Login",
         "2. Create New Rogue",
@@ -1247,7 +1249,7 @@ void show_leaderboard(const char *filename) {
     mvwaddch(score_win, 2, 0, ACS_LTEE);
     mvwhline(score_win, 2, 1, ACS_HLINE, win_width - 2);
     mvwaddch(score_win, 2, win_width - 1, ACS_RTEE);
-score_win
+
     int start_index = 0;  // For scrolling
     int selected = 0;
     int ch;
