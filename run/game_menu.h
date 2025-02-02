@@ -32,8 +32,11 @@ void play_music(const char *filename) ;
 void scoreboard(MENU *menu, WINDOW *menu_win) ;
 void show_leaderboard(const char *filename) ;
 void redraw_menu(MENU *sub_menu, WINDOW *sub_menu_win, char *name);
+void init_player();
 
-void start_menu() {
+
+
+void init_player() {
     // clear();
     // refresh();
     player.logged_in = false;
@@ -42,8 +45,13 @@ void start_menu() {
     player.resume_game_bool = false;
     player.floor = 1;
     player.game_difficulty = 2;// default: medium
+    player.health = 105;
+    player.food_count = 0;
+    player.lost = false;
+    player.won = false;
 
-
+}
+void start_menu() {
     char *choices[] = {
         "1. Rogue Login",
         "2. Create New Rogue",
@@ -398,7 +406,7 @@ void register_user(const char *filename, const char *username, const char *passw
         return;
     }
 
-    fprintf(file, "%s:%s:0\n", username, password);  // Store username and password
+    fprintf(file, "%s:%s:0:0:0:0\n", username, password);  // Store username and password
     fclose(file);
 //    printf("User '%s' registered successfully!\n", username);
 }
@@ -1239,7 +1247,7 @@ void show_leaderboard(const char *filename) {
     mvwaddch(score_win, 2, 0, ACS_LTEE);
     mvwhline(score_win, 2, 1, ACS_HLINE, win_width - 2);
     mvwaddch(score_win, 2, win_width - 1, ACS_RTEE);
-
+score_win
     int start_index = 0;  // For scrolling
     int selected = 0;
     int ch;

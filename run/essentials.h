@@ -33,8 +33,8 @@
 
 
 #define MAX_ROOMS 6
-#define MIN_ROOM_SIZE 4
-#define MAX_ROOM_SIZE 13
+#define MIN_ROOM_SIZE 5
+#define MAX_ROOM_SIZE 15
 // Define boundaries for the terminal
 #define MAX_COL COLS           // Number of columns in the terminal
 #define MAX_ROW LINES           // Number of rows in the terminal
@@ -52,19 +52,11 @@ typedef struct {
 
 typedef struct {
     int x, y;      // Top-left corner
-    int width;
-    int height;
+    int width; //x
+    int height;//y
     bool visited;
 
-
-    int type;   //1: regular  2: spell  3:treasure  4: nightmare
-    int locked;
-    int password;
-    Pos doors[2];
-    Pos pillar_seed;
-    int traps_count;
-    Pos traps[10];
-    int ordinary_food;
+    int type;  //1: regular  2: spell  3:treasure  4: nightmare
 } Room;
 
 typedef struct {
@@ -85,18 +77,22 @@ typedef struct {
     int player_color;
     int song;
     int floor;
-    int stair_pos;
+    int forward_stair_pos;
+    int backward_stair_pos;
     bool a_pressed;
     bool map_revealed;
     int first_room_pos;
-
-
-
-
     Pos player_pos;
+    int health;
+    int food_count;
+
+    bool lost;
+    bool won;
+
+
+
     Room rooms[6];
     int MAX_health;
-    int health;
     int hungriness;
     int players_ordinary_food;
     int players_mace;
@@ -107,11 +103,19 @@ typedef struct {
     int players_health_potion;
     int players_speed_potion;
     int players_damage_potion;
-    time_t start_time;
     int k_lock;
-    time_t password_start_time;
 } Player;
 
+typedef struct {
+    Pos pos;
+    char symbol;
+    int health; //how many times it should be damaged
+    int attack; //how much it decreases playe's health
+    int defense;
+    int speed;
+    bool alive;
+    int room;
+} Monster;
 
 
 
